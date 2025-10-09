@@ -1,0 +1,42 @@
+import { getUserSession } from '../../utils/session'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Obter token do cookie
+    const token = getCookie(event, 'auth-token')
+
+    if (!token) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação não encontrado'
+      })
+    }
+
+    // Verificar sessão
+    const sessionData = getUserSession(token)
+
+    if (!sessionData || !sessionData.isValid) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Sessão inválida ou expirada'
+      })
+    }
+
+    return {
+      success: true,
+      user: {
+        email: sessionData.user.email,
+        created_at: sessionData.user.created_at,
+        expires_at: sessionData.user.expires_at
+      }
+    }
+
+  } catch (error: any) {
+    console.error('Auth check error:', error)
+
+    return {
+      success: false,
+      error: error.statusMessage || error.message || 'Não autenticado'
+    }
+  }
+})
