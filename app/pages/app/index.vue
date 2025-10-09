@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import DashAlunos from '~/components/app/DashAlunos.vue'
+
 const { data: page } = await useAsyncData('index', () => queryCollection('index').first())
 
 const title = page.value?.seo?.title || page.value?.title

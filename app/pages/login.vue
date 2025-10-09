@@ -2,7 +2,6 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { LoginRequest } from '../../types'
-import { fi } from 'zod/locales'
 
 definePageMeta({
   layout: 'auth'
@@ -10,7 +9,7 @@ definePageMeta({
 
 useSeoMeta({
   title: 'Login',
-  description: 'Login to your account to continue'
+  description: 'Entre com seu usuário Anima para continuar'
 })
 
 const toast = useToast()
@@ -18,14 +17,14 @@ const toast = useToast()
 const fields = [{
   name: 'email',
   type: 'text' as const,
-  label: 'Email',
-  placeholder: 'Enter your email',
+  label: 'Usuário',
+  placeholder: 'Entre com seu usuário',
   required: true
 }, {
   name: 'password',
   label: 'Password',
   type: 'password' as const,
-  placeholder: 'Enter your password'
+  placeholder: 'Entre com sua senha'
 }, {
   name: 'remember',
   label: 'Remember me',
@@ -92,15 +91,15 @@ onMounted(async () => {
   <UAuthForm
     :fields="fields"
     :schema="schema"
-    title="Welcome back"
+    title="Seja bem vindo"
     icon="i-lucide-lock"
     @submit.prevent="handleLogin"
   >
     <template #description>
-      Don't have an account? <ULink
+      Solicitar acesso <ULink
         to="/signup"
         class="text-primary font-medium"
-      >Sign up</ULink>.
+      >Service Desk</ULink>.
     </template>
 
     <template #password-hint>
@@ -108,14 +107,7 @@ onMounted(async () => {
         to="/"
         class="text-primary font-medium"
         tabindex="-1"
-      >Forgot password?</ULink>
-    </template>
-
-    <template #footer>
-      By signing in, you agree to our <ULink
-        to="/"
-        class="text-primary font-medium"
-      >Terms of Service</ULink>.
+      >Perdeu a senha?</ULink>
     </template>
   </UAuthForm>
 </template>

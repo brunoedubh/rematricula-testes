@@ -13,7 +13,8 @@ const loggingOut = ref(false)
 const searchForm = reactive<StudentSearchRequest>({
   studentCode: '',
   searchTerm: '',
-  environment: 'dev'
+  marca: 'Una',
+  campoexemplo: '',
 })
 
 const searching = ref(false)
@@ -21,9 +22,9 @@ const searchResults = ref<Aluno[]>([])
 const searchError = ref<string | null>(null)
 const hasSearched = ref(false)
 
-const environmentOptions = [
-  { label: 'Desenvolvimento', value: 'dev' },
-  { label: 'Produção', value: 'prod' }
+const exemploOptions = [
+  { label: 'Una', value: 'una' },
+  { label: 'Unibh', value: 'unibh' }
 ]
 
 // Carregar dados do usuário
@@ -236,10 +237,24 @@ function getStatusColor(status: string): 'primary' | 'secondary' | 'success' | '
             </UInput>
 
             <USelect
-              v-model="searchForm.environment"
-              :options="environmentOptions"
+              v-model="searchForm.marca"
+              :options="exemploOptions"
               size="lg"
-              placeholder="Ambiente"
+              placeholder="Marca"
+            />
+
+            <USelect
+              v-model="searchForm.campoexemplo"
+              :options="exemploOptions"
+              size="lg"
+              placeholder="Contrato"
+            />
+
+            <USelect
+              v-model="searchForm.campoexemplo"
+              :options="exemploOptions"
+              size="lg"
+              placeholder="Grade"
             />
           </div>
 

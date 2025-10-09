@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { Aluno, StudentSearchRequest } from '../../../types'
 const route = useRoute()
 const user = ref<any>(null)
 const loggingOut = ref(false)
 
-const items = computed(() => [{
+/*const items = computed(() => [{
   label: 'Docs',
   to: '/docs',
   active: route.path.startsWith('/docs')
@@ -14,7 +13,7 @@ const items = computed(() => [{
 }, {
   label: 'Changelog',
   to: '/changelog'
-}])
+}])*/
 
 onMounted(async () => {
   try {
@@ -54,14 +53,9 @@ async function handleLogout() {
       <TemplateMenu />
     </template>
 
-    <UNavigationMenu
-      :items="items"
-      variant="link"
-    />
-
     <template #right>
       <UColorModeButton />
-        <div v-if="user?.loggedIn">
+        <div v-if="!user?.loggedIn">
           <UButton
             icon="i-lucide-log-in"
             color="neutral"
@@ -98,11 +92,11 @@ async function handleLogout() {
     </template>
 
     <template #body>
-      <UNavigationMenu
+      <!--<UNavigationMenu
         :items="items"
         orientation="vertical"
         class="-mx-2.5"
-      />
+      />-->
 
       <USeparator class="my-6" />
 
@@ -113,12 +107,6 @@ async function handleLogout() {
         to="/login"
         block
         class="mb-3"
-      />
-      <UButton
-        label="Sign up"
-        color="neutral"
-        to="/signup"
-        block
       />
     </template>
   </UHeader>

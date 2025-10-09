@@ -16,7 +16,7 @@ useSeoMeta({
 <template>
   <div v-if="page">
     <UPageHero
-      :title="page.title"
+      :title="title"
       :description="page.description"
       :links="page.hero.links"
     >

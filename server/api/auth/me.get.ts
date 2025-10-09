@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
       success: true,
       user: {
         email: sessionData.user.email,
+        loggedIn: true,
         created_at: sessionData.user.created_at,
         expires_at: sessionData.user.expires_at
       }
