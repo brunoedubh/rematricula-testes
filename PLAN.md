@@ -156,7 +156,7 @@ Quando gerar token de aluno: usa MESMA senha do login
 │  Entre com suas credenciais Microsoft          │
 │                                                 │
 │  Usuario Corporativo (completar com email):     │
-│  [ seu.nome@animaeducacao.com.br            ]  │
+│  [ seu.nome          ]  │
 │                                                 │
 │  Senha Microsoft:                               │
 │  [ ••••••••••••                              ]  │
@@ -377,17 +377,32 @@ interface CachedToken {
 
 **Colunas necessárias:**
 ```sql
-cod_aluno: STRING
-ra: STRING
-cpf: STRING
-nome_aluno: STRING
-marca: STRING
-instituicao: STRING
-curso: STRING
-oferta: STRING
-assinou_contrato: BOOLEAN
-matriculado: BOOLEAN
--- adicionar outras conforme necessário
+COD_ALUNO int
+NUM_MATRICULA string
+DSC_MARCA string
+COD_MARCA int
+SGL_INSTITUICAO string
+SGL_PERIODO_LETIVO string
+NOM_ALUNO string
+NOM_CURSO string
+NOM_TPO_PERSONA string
+DSC_TPO_GRD_CURRICULAR string
+DSC_CATEGORIA_GRADE string
+IND_REG_FINANCEIRO string
+IND_EXECUTOU_LIBERACAO string
+IND_EXECUTOU_PROMOCAO string
+IND_CALOURO string
+IND_MEDICINA string
+COD_CURSO int
+COD_TPO_PERSONA int
+COD_CATEGORIA_GRADE int
+IND_CONFIRMADO_OFERTA_PRINC string
+IND_OFERTA_UCDP string
+IND_OFERTA_CORE string
+QTDE_DP_NA_MAT bigint
+IND_POSSUI_HORARIO string
+IND_NAO_POSSUI_HORARIO string
+IND_CONTRATO_LIBERADO string
 ```
 
 ### Query de Busca
@@ -427,11 +442,11 @@ OFFSET ${offset}
 - [x] API de login/logout
 
 ### 🗄️ Fase 3 - Integração Databricks
-- [ ] Cliente REST API Databricks
-- [ ] Interface de busca de alunos
-- [ ] Busca avançada com filtros
-- [ ] Paginação e debounce
-- [ ] Tratamento de erros
+- [x] Cliente REST API Databricks
+- [x] Interface de busca de alunos
+- [x] Busca avançada com filtros
+- [x] Paginação e debounce
+- [x] Tratamento de erros
 
 ### 🎫 Fase 4 - Sistema de Tokens
 - [ ] Estrutura de cache (token-cache.ts)
@@ -544,7 +559,6 @@ ALLOWED_DOMAIN=animaeducacao.com.br
 1. ✅ **Credenciais individuais** - Cada usuário usa suas próprias
 2. ✅ **Criptografia forte** - AES-256-CBC para senhas em sessão
 3. ✅ **Cookies httpOnly** - Sessões protegidas contra XSS
-4. ✅ **Validação de domínio** - Apenas @animaeducacao.com.br
 5. ✅ **Confirmação para produção** - Modal de confirmação explícita
 6. ✅ **Logs de auditoria** - Registro de quem gerou cada token
 7. ✅ **Margem de expiração** - Renovação 5min antes de expirar
@@ -746,7 +760,7 @@ Sistema verifica cookie de sessão
   ↓
 Não encontrado → Redireciona para /login
   ↓
-Usuário digita email@animaeducacao.com.br + senha
+Usuário digita usuario + senha
   ↓
 Sistema valida credenciais no Azure AD
   ↓

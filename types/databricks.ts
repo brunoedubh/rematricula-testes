@@ -17,6 +17,7 @@ export interface StudentSearchRequest {
   searchTerm?: string
   course?: string
   status?: string
+  marca?: string
   environment?: 'dev' | 'prod'
 }
 
@@ -30,10 +31,11 @@ export interface StudentSearchResponse {
 }
 
 export interface DatabricksConfig {
-  workspace: string
-  clientId: string
-  clientSecret: string
-  warehouseId?: string
+  host: string
+  token: string
+  warehouseId: string
+  catalog: string
+  schema: string
 }
 
 export interface DatabricksTokenResponse {
@@ -54,15 +56,17 @@ export interface DatabricksQueryRequest {
   parameters?: Record<string, any>
 }
 
+export interface DatabricksQueryResult {
+  data_array?: any[][]
+  columns?: Array<{
+    name: string
+    type: string
+  }>
+}
+
 export interface DatabricksQueryResponse {
   statement_id: string
   state: 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-  result?: {
-    data_array?: any[][]
-    columns?: Array<{
-      name: string
-      type: string
-    }>
-  }
+  result?: DatabricksQueryResult
   error?: any
 }

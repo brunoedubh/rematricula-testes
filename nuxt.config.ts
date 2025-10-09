@@ -41,12 +41,12 @@ export default defineNuxtConfig({
     azureClientIdProd: process.env.AZURE_CLIENT_ID_PROD,
     azureScopeProd: process.env.AZURE_SCOPE_PROD,
 
-    databricksWorkspaceDev: process.env.DATABRICKS_WORKSPACE_DEV,
-    databricksClientIdDev: process.env.DATABRICKS_CLIENT_ID_DEV,
-    databricksClientSecretDev: process.env.DATABRICKS_CLIENT_SECRET_DEV,
-    databricksWorkspaceProd: process.env.DATABRICKS_WORKSPACE_PROD,
-    databricksClientIdProd: process.env.DATABRICKS_CLIENT_ID_PROD,
-    databricksClientSecretProd: process.env.DATABRICKS_CLIENT_SECRET_PROD,
+    // Databricks Configuration
+    databricksHost: process.env.DATABRICKS_HOST,
+    databricksToken: process.env.DATABRICKS_TOKEN,
+    databricksWarehouseId: process.env.DATABRICKS_WAREHOUSE_ID,
+    databricksCatalog: process.env.DATABRICKS_CATALOG || 'hive_metastore',
+    databricksSchema: process.env.DATABRICKS_SCHEMA || 'default',
 
     allowedDomain: process.env.ALLOWED_DOMAIN || 'animaeducacao.com.br',
 

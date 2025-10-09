@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Aluno, StudentSearchRequest } from '../../../types'
+import { useDebounceFn } from '@vueuse/core'
+
 const { isLoading } = useLoadingIndicator()
 
 const appear = ref(false)
@@ -13,8 +15,9 @@ const loggingOut = ref(false)
 const searchForm = reactive<StudentSearchRequest>({
   studentCode: '',
   searchTerm: '',
-  marca: 'Una',
-  campoexemplo: '',
+  marca: '',
+  course: '',
+  status: ''
 })
 
 const searching = ref(false)
@@ -22,9 +25,12 @@ const searchResults = ref<Aluno[]>([])
 const searchError = ref<string | null>(null)
 const hasSearched = ref(false)
 
-const exemploOptions = [
-  { label: 'Una', value: 'una' },
-  { label: 'Unibh', value: 'unibh' }
+const marcaOptions = [
+  { label: 'Todas', value: '' },
+  { label: 'Una', value: 'Una' },
+  { label: 'Unibh', value: 'Unibh' },
+  { label: 'São Judas', value: 'São Judas' },
+  { label: 'UniFG', value: 'UniFG' }
 ]
 
 // Carregar dados do usuário
@@ -56,7 +62,8 @@ async function handleLogout() {
   }
 }
 
-async function searchStudents() {
+// Função de busca principal
+async function performSearch() {
   if (!searchForm.studentCode && !searchForm.searchTerm) {
     searchError.value = 'Informe pelo menos um critério de busca'
     return
@@ -86,10 +93,27 @@ async function searchStudents() {
   }
 }
 
+// Busca com debounce de 500ms
+const debouncedSearch = useDebounceFn(performSearch, 500)
+
+// Watcher para busca automática quando digitar (com debounce)
+watch([() => searchForm.searchTerm, () => searchForm.studentCode], ([newTerm, newCode]) => {
+  if (newTerm || newCode) {
+    debouncedSearch()
+  }
+})
+
+// Busca manual (sem debounce) ao clicar no botão
+function searchStudents() {
+  performSearch()
+}
+
 function clearSearch() {
   searchForm.studentCode = ''
   searchForm.searchTerm = ''
-  searchForm.environment = 'dev'
+  searchForm.marca = ''
+  searchForm.course = ''
+  searchForm.status = ''
   searchResults.value = []
   searchError.value = null
   hasSearched.value = false
@@ -238,24 +262,30 @@ function getStatusColor(status: string): 'primary' | 'secondary' | 'success' | '
 
             <USelect
               v-model="searchForm.marca"
-              :options="exemploOptions"
+              :options="marcaOptions"
               size="lg"
               placeholder="Marca"
             />
 
-            <USelect
-              v-model="searchForm.campoexemplo"
-              :options="exemploOptions"
+            <UInput
+              v-model="searchForm.course"
+              placeholder="Curso"
               size="lg"
-              placeholder="Contrato"
-            />
+            >
+              <template #leading>
+                <UIcon name="i-heroicons-academic-cap" class="h-4 w-4 text-gray-400" />
+              </template>
+            </UInput>
 
-            <USelect
-              v-model="searchForm.campoexemplo"
-              :options="exemploOptions"
+            <UInput
+              v-model="searchForm.status"
+              placeholder="Status"
               size="lg"
-              placeholder="Grade"
-            />
+            >
+              <template #leading>
+                <UIcon name="i-heroicons-check-badge" class="h-4 w-4 text-gray-400" />
+              </template>
+            </UInput>
           </div>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
@@ -294,37 +324,49 @@ function getStatusColor(status: string): 'primary' | 'secondary' | 'success' | '
             <div class="grid grid-cols-1 gap-4">
               <UCard
                 v-for="student in searchResults"
-                :key="student.codigo_aluno"
+                :key="student.COD_ALUNO"
               >
                 <div class="flex items-start justify-between">
-                  <div class="space-y-2">
-                    <div class="flex items-center space-x-2">
+                  <div class="space-y-2 flex-1">
+                    <div class="flex items-center space-x-2 flex-wrap">
                       <UBadge color="info" variant="subtle">
-                        {{ student.codigo_aluno }}
+                        #{{ student.COD_ALUNO }}
                       </UBadge>
                       <span class="font-medium text-gray-900">
-                        {{ student.nome_completo }}
+                        {{ student.NOM_ALUNO }}
                       </span>
+                      <UBadge color="secondary" variant="subtle">
+                        {{ student.DSC_MARCA }}
+                      </UBadge>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm text-gray-600">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 text-sm text-gray-600">
                       <div>
-                        <span class="font-medium">Email:</span> {{ student.email }}
+                        <span class="font-medium">Matrícula:</span> {{ student.NUM_MATRICULA }}
                       </div>
                       <div>
-                        <span class="font-medium">Curso:</span> {{ student.curso }}
+                        <span class="font-medium">Instituição:</span> {{ student.SGL_INSTITUICAO }}
                       </div>
                       <div>
-                        <span class="font-medium">Status:</span>
+                        <span class="font-medium">Curso:</span> {{ student.NOM_CURSO }}
+                      </div>
+                      <div>
+                        <span class="font-medium">Status matrícula:</span>
                         <UBadge
-                          :color="getStatusColor(student.status_matricula)"
+                          :color="getStatusColor(student.DSC_STA_MATRICULA)"
                           variant="subtle"
                         >
-                          {{ student.status_matricula }}
+                          {{ student.DSC_STA_MATRICULA }}
                         </UBadge>
                       </div>
                       <div>
-                        <span class="font-medium">Período:</span> {{ student.periodo_atual }}
+                        <span class="font-medium">Período:</span> {{ student.SGL_PERIODO_LETIVO }}
+                      </div>
+                      <div v-if="student.IND_CONTRATO_LIBERADO">
+                        <UBadge color="success" variant="subtle">
+                          <UIcon name="i-heroicons-check-circle" class="mr-1 h-3 w-3" />
+                          Contrato Liberado
+                        </UBadge>
                       </div>
                     </div>
                   </div>
