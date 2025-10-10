@@ -11,7 +11,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     if (!body.email || !body.password) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Email e senha são obrigatórios'
+        message: 'Email e senha são obrigatórios'
       })
     }
 
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     if (!isValidCredentials) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Credenciais inválidas'
+        message: 'Credenciais inválidas'
       })
     }
 
@@ -59,7 +59,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
 
     return {
       success: false,
-      error: error.statusMessage || error.message || 'Erro interno do servidor'
+      error: error.message || 'Erro interno do servidor'
     }
   }
 })

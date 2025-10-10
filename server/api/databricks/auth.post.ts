@@ -8,7 +8,7 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
     if (!session) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Não autenticado'
+        message: 'Não autenticado'
       })
     }
 
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
     if (!body.workspace || !body.environment) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Workspace e environment são obrigatórios'
+        message: 'Workspace e environment são obrigatórios'
       })
     }
 
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
     if (!databricksConfig) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Configuração do Databricks não encontrada para o ambiente especificado'
+        message: 'Configuração do Databricks não encontrada para o ambiente especificado'
       })
     }
 
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
     if (!databricksToken) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Falha na autenticação com Databricks'
+        message: 'Falha na autenticação com Databricks'
       })
     }
 
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
 
     return {
       success: false,
-      error: error.statusMessage || error.message || 'Erro interno do servidor'
+      error: error.message || 'Erro interno do servidor'
     }
   }
 })

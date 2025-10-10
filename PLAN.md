@@ -271,23 +271,42 @@ Quando gerar token de aluno: usa MESMA senha do login
 5. Mostra notificação (cache/novo)
    ↓
 6. Abre URL em nova aba
-   ↓
-7. Log de auditoria
+
 ```
 
 **Confirmação para Produção:**
+
+
 ```
+1. Usuário clica em "PROD"
+   ↓
+2. Sistema abre modal de confirmação e pede senha novamente para geraçaõ do token de produção
+(no caso de produção não deve guardar o token no login e a geraçaõ é diferente pois o email não é @homolog e sim @animaeducacao.com.br)
+   ↓
+3a. Token válido em cache → Reutiliza
+3b. Token expirado/inexistente → Gera novo
+   ↓
+4. Constrói URL completa
+   ↓
+5. Mostra notificação (cache/novo)
+   ↓
+6. Abre URL em nova aba
+
+
 ┌─────────────────────────────────────┐
-│  ⚠️ Atenção AMBIENTE PRODUTIVO   │
+│  ⚠️ Atenção AMBIENTE PRODUTIVO      │
 ├─────────────────────────────────────┤
 │  Você está prestes a acessar o      │
 │  ambiente de PRODUÇÃO não altere    │
 |    ou execute ações                 │
 │                                     │
 │  Aluno: João Silva (12345678)       │
-│  Ambiente: PRODUÇÃO                 │
+│  Ambiente: PRODUÇÃO   
+|                                     |
+│  Digite sua senha novamente 
+|     [xxx             ]              |           
 │                                     │
-│  Tem certeza?                       │
+│                        │
 │                                     │
 │  [ Cancelar ]  [ Sim, acessar ]    │
 └─────────────────────────────────────┘
@@ -452,13 +471,15 @@ OFFSET ${offset}
 - [ ] Estrutura de cache (token-cache.ts)
 - [ ] Gerador de tokens com cache (azure-token.ts)
 - [ ] API de geração de URLs
+- [ ] Guarda tokens de dev e hml gerados no login assincronamente
 - [ ] Lógica de renovação automática
-- [ ] Logs de auditoria
+- [ ] Lógica de geração e renovação para produção sempre com senha quando expira ou não existir
+- [ ] Mostrar um indicador de tokens gerados no dash
 
 ### 🎨 Fase 5 - Interface Completa
 - [ ] Componente StudentCard com feedback visual
 - [ ] Botões de acesso por ambiente
-- [ ] Modal de confirmação para produção
+- [ ] Modal de confirmação para produção com senha
 - [ ] Notificações toast (cache/novo token)
 - [ ] Loading states
 - [ ] Tratamento de erros no frontend

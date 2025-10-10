@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!token) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Token de autenticação não encontrado'
+        message: 'Token de autenticação não encontrado'
       })
     }
 
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     if (!sessionData || !sessionData.isValid) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Sessão inválida ou expirada'
+        message: 'Sessão inválida ou expirada'
       })
     }
 
@@ -33,11 +33,11 @@ export default defineEventHandler(async (event) => {
     }
 
   } catch (error: any) {
-    console.error('Auth check error:', error)
+    console.error('Auth check error:', error.message || error)
 
-    return {
-      success: false,
-      error: error.statusMessage || error.message || 'Não autenticado'
-    }
+    throw createError({
+      statusCode: 401,
+      message: error.message || 'Não autenticado'
+    })
   }
 })

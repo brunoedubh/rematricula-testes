@@ -9,7 +9,7 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
     if (!session) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Não autenticado'
+        message: 'Não autenticado'
       })
     }
 
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
     if (!body.searchTerm && !body.studentCode) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Termo de busca ou código do aluno são obrigatórios'
+        message: 'Termo de busca ou código do aluno são obrigatórios'
       })
     }
 
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
 
     return {
       success: false,
-      error: error.statusMessage || error.message || 'Erro interno do servidor',
+      error: error.message || 'Erro interno do servidor',
       students: [],
       total: 0
     }
