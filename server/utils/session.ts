@@ -30,6 +30,9 @@ export function createSession(user: SessionUser): string {
 
 export function getUserSession(token: string): SessionData | null {
   try {
+    // Limpar sessões expiradas de forma lazy
+    cleanupIfNeeded()
+
     const config = useRuntimeConfig()
     const decoded = jwt.verify(token, config.sessionSecret) as any
 
@@ -39,7 +42,28 @@ export function getUserSession(token: string): SessionData | null {
 
     const sessionUser = sessionStore.get(decoded.sessionId)
 
+    // Se a sessão não existe no store mas o JWT é válido,
+    // recriar a sessão a partir do JWT (útil em dev com hot reload)
     if (!sessionUser) {
+      // Verificar se o JWT ainda é válido
+      if (decoded.exp && decoded.exp * 1000 > Date.now()) {
+        // Recriar sessão a partir do JWT
+        const reconstructedUser: SessionUser = {
+          email: decoded.email,
+          created_at: decoded.iat * 1000,
+          expires_at: decoded.exp * 1000,
+          encrypted_password: '' // Não podemos recuperar a senha, mas JWT é válido
+        }
+
+        // Adicionar de volta ao store
+        sessionStore.set(decoded.sessionId, reconstructedUser)
+
+        return {
+          user: reconstructedUser,
+          isValid: true
+        }
+      }
+
       return { user: null as any, isValid: false }
     }
 
@@ -118,7 +142,16 @@ function generateSessionId(): string {
   return crypto.randomUUID()
 }
 
-// Limpar sessões expiradas a cada 30 minutos
-if (typeof setInterval !== 'undefined') {
-  setInterval(clearExpiredSessions, 30 * 60 * 1000)
+// Última vez que as sessões foram limpas
+let lastCleanup = Date.now()
+const CLEANUP_INTERVAL = 30 * 60 * 1000 // 30 minutos
+
+// Limpar sessões expiradas de forma lazy (quando necessário)
+// Isso evita usar setInterval no servidor
+function cleanupIfNeeded() {
+  const now = Date.now()
+  if (now - lastCleanup > CLEANUP_INTERVAL) {
+    clearExpiredSessions()
+    lastCleanup = now
+  }
 }

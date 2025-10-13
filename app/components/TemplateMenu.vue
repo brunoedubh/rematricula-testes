@@ -3,27 +3,24 @@
     v-slot="{ open }"
     :modal="false"
     :items="[{
-      label: 'Starter',
-      to: 'https://starter-template.nuxt.dev/'
+      label: 'Remanejamento',
+      to: '#'
     }, {
-      label: 'SaaS',
-      to: 'https://saas-template.nuxt.dev/',
+      label: 'Abandono',
+      to: '#',
       color: 'primary',
       checked: true,
       type: 'checkbox'
     }, {
-      label: 'Dashboard',
-      to: 'https://dashboard-template.nuxt.dev/'
-    }, {
-      label: 'Changelog',
-      to: 'https://changelog-template.nuxt.dev/'
+      label: 'Dispensa',
+      to: '#'
     }]"
     :content="{ align: 'start' }"
     :ui="{ content: 'min-w-fit' }"
     size="xs"
   >
     <UButton
-      label="SaaS"
+      label="Rematrícula"
       variant="subtle"
       trailing-icon="i-lucide-chevron-down"
       size="xs"

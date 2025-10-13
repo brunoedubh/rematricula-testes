@@ -21,18 +21,19 @@ async function loadTokensStatus() {
   }
 }
 
-// Carregar ao montar
+// Carregar ao montar e configurar atualização automática
 onMounted(() => {
   loadTokensStatus()
-})
 
-// Atualizar a cada 30 segundos
-const interval = setInterval(() => {
-  loadTokensStatus()
-}, 30000)
+  // Atualizar a cada 30 segundos (apenas no cliente)
+  const interval = setInterval(() => {
+    loadTokensStatus()
+  }, 30000)
 
-onUnmounted(() => {
-  clearInterval(interval)
+  // Limpar interval ao desmontar
+  onUnmounted(() => {
+    clearInterval(interval)
+  })
 })
 
 function getStatusColor(exists: boolean, minutesRemaining?: number): 'success' | 'warning' | 'neutral' {
