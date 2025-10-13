@@ -1,34 +1,42 @@
 <script setup lang="ts">
-const { data: page } = await useAsyncData('index', () => queryCollection('index').first())
-
-const title = page.value?.seo?.title || page.value?.title
-const description = page.value?.seo?.description || page.value?.description
-
 useSeoMeta({
   titleTemplate: '',
-  title,
-  ogTitle: title,
-  description,
-  ogDescription: description
+  title: 'Rematrícula - Portal de Gestão',
+  ogTitle: 'Rematrícula - Portal de Gestão',
+  description: 'Sistema de gestão de tokens e acessos para rematrícula',
+  ogDescription: 'Sistema de gestão de tokens e acessos para rematrícula'
+})
+
+// Redirecionar para login se não estiver autenticado, ou para /app se já estiver
+onMounted(async () => {
+  try {
+    const response = await $fetch('/api/auth/me') as any
+    if (response && response.user && response.user.email) {
+      await navigateTo('/app')
+    }
+  } catch {
+    // Usuário não está logado, mostrar página inicial
+  }
 })
 </script>
 
 <template>
-  <div v-if="page">
+  <div>
     <UPageHero
-      :title="title"
-      :description="page.description"
-      :links="page.hero.links"
+      title="Rematrícula"
+      description="Sistema de gestão de tokens e acessos para rematrícula de alunos"
+      :links="[
+        {
+          label: 'Fazer Login',
+          to: '/login',
+          size: 'lg',
+          color: 'primary',
+          icon: 'i-lucide-lock'
+        }
+      ]"
     >
       <template #top>
         <HeroBackground />
-      </template>
-
-      <template #title>
-        <MDC
-          :value="page.title"
-          unwrap="p"
-        />
       </template>
     </UPageHero>
   </div>
