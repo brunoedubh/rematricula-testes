@@ -1,13 +1,23 @@
-import { destroySession } from '../../utils/session'
+import { destroySession, getSessionFromEvent } from '../../utils/session'
+import { clearUserTokens } from '../../utils/token-cache'
 
 export default defineEventHandler(async (event) => {
   try {
+    // Obter sessão para limpar tokens do cache
+    const session = await getSessionFromEvent(event)
+
     // Obter token do cookie
     const token = getCookie(event, 'auth-token')
 
     if (token) {
       // Destruir sessão
       destroySession(token)
+    }
+
+    // Limpar tokens do cache se houver sessão
+    if (session) {
+      clearUserTokens(session.email)
+      console.log(`[LOGOUT] Tokens em cache limpos para ${session.email}`)
     }
 
     // Remover cookie

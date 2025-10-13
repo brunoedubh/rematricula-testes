@@ -17,7 +17,7 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
     const config = useRuntimeConfig()
 
     // Validação básica
-    if (!body.searchTerm && !body.studentCode) {
+    if (!body.searchTerm && !body.studentCode && !body.studentRA && (!body.course && !body.marca)) {
       throw createError({
         statusCode: 400,
         message: 'Termo de busca ou código do aluno são obrigatórios'

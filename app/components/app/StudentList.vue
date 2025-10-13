@@ -11,10 +11,22 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'clear-error': []
+  'view-details': [student: Aluno]
+  'access-environment': [environment: 'dev' | 'hml' | 'prod', student: Aluno]
 }>()
 
 function handleClearError() {
   emit('clear-error')
+}
+
+function handleViewDetails(student: Aluno) {
+  console.log('[StudentList] handleViewDetails called with:', student)
+  emit('view-details', student)
+}
+
+function handleAccessEnvironment(environment: 'dev' | 'hml' | 'prod', student: Aluno) {
+  console.log('[StudentList] handleAccessEnvironment called with:', environment, student)
+  emit('access-environment', environment, student)
 }
 </script>
 
@@ -36,6 +48,8 @@ function handleClearError() {
           v-for="student in students"
           :key="student.COD_ALUNO"
           :student="student"
+          @view-details="handleViewDetails"
+          @access-environment="handleAccessEnvironment"
         />
       </div>
     </div>

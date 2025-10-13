@@ -10,7 +10,6 @@ hero:
       icon: i-lucide-arrow-right
       trailing: true
       to: /login
-      target: _blank
       size: xl
     - label: Pedir acesso
       icon: i-lucide-inbox

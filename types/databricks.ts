@@ -14,6 +14,7 @@ export interface DatabricksAuthResponse {
 
 export interface StudentSearchRequest {
   studentCode?: string
+  studentRA?: string
   searchTerm?: string
   course?: string
   status?: string

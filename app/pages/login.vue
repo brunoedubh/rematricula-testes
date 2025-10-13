@@ -42,9 +42,13 @@ const loading = ref(false)
 const error = ref('')
 
 async function handleLogin(payload: FormSubmitEvent<Schema>) {
-  console.log(payload)
+  // Prevenir comportamento padrão do formulário para evitar exposição na URL
+  if (payload.event) {
+    payload.event.preventDefault()
+    payload.event.stopPropagation()
+  }
+
   if (!payload.data.email || !payload.data.password) {
-    console.log(payload.email)
     error.value = 'Email e senha são obrigatórios'
     return
   }
@@ -93,13 +97,10 @@ onMounted(async () => {
     :schema="schema"
     title="Seja bem vindo"
     icon="i-lucide-lock"
-    @submit.prevent="handleLogin"
+    @submit="handleLogin"
   >
     <template #description>
-      Solicitar acesso <ULink
-        to="/signup"
-        class="text-primary font-medium"
-      >Service Desk</ULink>.
+      Solicitar acesso via <span class="text-primary font-medium">Service Desk</span>.
     </template>
 
     <template #password-hint>

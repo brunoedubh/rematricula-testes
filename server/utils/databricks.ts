@@ -18,12 +18,16 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
     conditions.push(`COD_ALUNO = ${searchParams.studentCode}`)
   }
 
+  if (searchParams.studentRA) {
+    conditions.push(`NUM_MATRICULA = ${searchParams.studentRA}`)
+  }
+
   // Busca por termo genérico (nome, matrícula)
   if (searchParams.searchTerm) {
     const term = searchParams.searchTerm.toLowerCase()
     conditions.push(`(
       LOWER(NOM_ALUNO) LIKE '%${term}%' OR
-      NUM_MATRICULA LIKE '%${term}%'
+      NUM_CPF LIKE '%${term}%'
     )`)
   }
 
@@ -39,7 +43,7 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
 
   // Filtro por marca
   if (searchParams.marca) {
-    conditions.push(`LOWER(DSC_MARCA) LIKE '%${searchParams.marca.toLowerCase()}%'`)
+    conditions.push(`COD_MARCA = ${searchParams.marca}`)
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -71,7 +75,8 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
       QTDE_DP_NA_MAT,
       IND_POSSUI_HORARIO,
       IND_NAO_POSSUI_HORARIO,
-      IND_CONTRATO_LIBERADO
+      IND_CONTRATO_LIBERADO,
+      IND_CONTRATO_ASSINADO
     FROM sb_jira.wv_alunos_rem
     ${whereClause}
     ORDER BY NOM_ALUNO ASC
@@ -152,7 +157,8 @@ export function parseStudentResults(data: any): Aluno[] {
       QTDE_DP_NA_MAT: row[22],
       IND_POSSUI_HORARIO: row[23],
       IND_NAO_POSSUI_HORARIO: row[24],
-      IND_CONTRATO_LIBERADO: row[25]
+      IND_CONTRATO_LIBERADO: row[25],
+      IND_CONTRATO_ASSINADO: row[26]
     }))
   } catch (error) {
     console.error('Error parsing student results:', error)
@@ -274,6 +280,10 @@ export function buildQueryParameters(searchParams: StudentSearchRequest): Record
     params.studentCode = searchParams.studentCode
   }
 
+  if (searchParams.studentRA) {
+    params.studentRA = searchParams.studentRA
+  }
+
   if (searchParams.searchTerm) {
     params.searchTerm = `%${searchParams.searchTerm}%`
     params.exactTerm = searchParams.searchTerm
@@ -288,7 +298,7 @@ export function buildQueryParameters(searchParams: StudentSearchRequest): Record
   }
 
   if (searchParams.marca) {
-    params.marca = `%${searchParams.marca}%`
+    params.marca = searchParams.marca
   }
 
   return params

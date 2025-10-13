@@ -50,11 +50,14 @@ export default defineNuxtConfig({
 
     allowedDomain: process.env.ALLOWED_DOMAIN || 'animaeducacao.com.br',
 
+    // URLs base por ambiente (server-side)
+    urlBaseDev: process.env.URL_BASE_DEV || 'https://cloudapp-dev.animaeducacao.com.br/rematricula',
+    urlBaseHml: process.env.URL_BASE_HML || 'https://cloudapp-hml.animaeducacao.com.br/rematricula',
+    urlBaseProd: process.env.URL_BASE_PROD || 'https://cloudapp.animaeducacao.com.br/rematricula',
+
     // Public keys (exposed to the frontend)
     public: {
-      urlBaseDev: process.env.URL_BASE_DEV,
-      urlBaseHml: process.env.URL_BASE_HML,
-      urlBaseProd: process.env.URL_BASE_PROD
+
     }
   },
 

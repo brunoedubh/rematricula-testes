@@ -1,6 +1,7 @@
 import type { LoginRequest, LoginResponse, SessionUser } from '../../../types'
 import { encrypt } from '../../utils/encryption'
 import { createSession } from '../../utils/session'
+import { generateTokensForEnvironments } from '../../utils/azure-token'
 
 export default defineEventHandler(async (event): Promise<LoginResponse> => {
   try {
@@ -46,6 +47,11 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
       sameSite: 'lax',
       maxAge: parseInt(config.sessionDuration) / 1000 // Convert to seconds
     })
+
+    // Gerar tokens para dev e hml de forma assíncrona (não bloqueia o login)
+    // Produção NÃO é gerada no login, apenas quando solicitado com senha
+    console.log(`[LOGIN] Iniciando geração assíncrona de tokens para ${body.email}`)
+    generateTokensForEnvironments(body.email, body.password, ['dev', 'hml'])
 
     return {
       success: true,

@@ -468,13 +468,13 @@ OFFSET ${offset}
 - [x] Tratamento de erros
 
 ### 🎫 Fase 4 - Sistema de Tokens
-- [ ] Estrutura de cache (token-cache.ts)
-- [ ] Gerador de tokens com cache (azure-token.ts)
-- [ ] API de geração de URLs
-- [ ] Guarda tokens de dev e hml gerados no login assincronamente
-- [ ] Lógica de renovação automática
-- [ ] Lógica de geração e renovação para produção sempre com senha quando expira ou não existir
-- [ ] Mostrar um indicador de tokens gerados no dash
+- [x] Estrutura de cache (token-cache.ts)
+- [x] Gerador de tokens com cache (azure-token.ts)
+- [x] API de geração de URLs
+- [x] Guarda tokens de dev e hml gerados no login assincronamente
+- [x] Lógica de renovação automática
+- [x] Lógica de geração e renovação para produção sempre com senha quando expira ou não existir
+- [x] Mostrar um indicador de tokens gerados no dash
 
 ### 🎨 Fase 5 - Interface Completa
 - [ ] Componente StudentCard com feedback visual

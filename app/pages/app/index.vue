@@ -16,11 +16,5 @@ useSeoMeta({
 </script>
 
 <template>
-  <div v-if="page">
-    <UPageHero>
-      <template #top>
-        <DashAlunos />
-      </template>
-    </UPageHero>
-  </div>
+  <DashAlunos />
 </template>

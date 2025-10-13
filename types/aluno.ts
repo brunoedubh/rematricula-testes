@@ -71,6 +71,7 @@ export interface Aluno {
   // Indicadores Financeiros e Contratuais
   IND_CONTRATO_LIBERADO?: string
   IND_REG_FINANCEIRO?: string
+  IND_CONTRATO_ASSINADO?: string
 
   // Indicadores Especiais
   IND_CALOURO?: string

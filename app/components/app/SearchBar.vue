@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { StudentSearchRequest } from '../../../types'
+import type { SelectItem } from '@nuxt/ui'
 
 const props = defineProps<{
   searching: boolean
@@ -13,13 +14,12 @@ const emit = defineEmits<{
 
 const searchForm = defineModel<StudentSearchRequest>('searchForm', { required: true })
 
-const marcaOptions = [
-  { label: 'Todas', value: '' },
-  { label: 'Una', value: 'Una' },
-  { label: 'Unibh', value: 'Unibh' },
-  { label: 'São Judas', value: 'São Judas' },
-  { label: 'UniFG', value: 'UniFG' }
-]
+const marcaOptions = ref<SelectItem[]>([
+  { label: 'Una', value: '1' },
+  { label: 'Unibh', value: '2' },
+  { label: 'São Judas', value: '3' },
+  { label: 'UniFG', value: '4' }
+])
 
 function handleSearch() {
   emit('search')
@@ -55,6 +55,16 @@ function handleClear() {
         </UInput>
 
         <UInput
+          v-model="searchForm.studentRA"
+          placeholder="RA"
+          size="lg"
+        >
+          <template #leading>
+            <UIcon name="i-heroicons-hashtag" class="h-4 w-4 text-gray-400" />
+          </template>
+        </UInput>
+
+        <UInput
           v-model="searchForm.searchTerm"
           placeholder="Nome, email ou CPF"
           size="lg"
@@ -66,9 +76,10 @@ function handleClear() {
 
         <USelect
           v-model="searchForm.marca"
-          :options="marcaOptions"
+          :items="marcaOptions"
           size="lg"
           placeholder="Marca"
+          clearable
         />
 
         <UInput
