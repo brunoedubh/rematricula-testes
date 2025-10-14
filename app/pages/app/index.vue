@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import DashAlunos from '~/components/app/DashAlunos.vue'
 
-const { data: page } = await useAsyncData('index', () => queryCollection('index').first())
-
-const title = page.value?.seo?.title || page.value?.title
-const description = page.value?.seo?.description || page.value?.description
+const title = 'Rematrícula - Dashboard'
+const description = 'Sistema de rematrícula de alunos'
 
 useSeoMeta({
   titleTemplate: '',

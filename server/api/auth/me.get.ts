@@ -33,7 +33,11 @@ export default defineEventHandler(async (event) => {
     }
 
   } catch (error: any) {
-    console.error('Auth check error:', error.message || error)
+    // Não logar erros de autenticação esperados (token não encontrado)
+    // Apenas logar erros inesperados
+    if (error.statusCode !== 401 && error.message !== 'Token de autenticação não encontrado') {
+      console.error('Auth check error:', error.message || error)
+    }
 
     throw createError({
       statusCode: 401,

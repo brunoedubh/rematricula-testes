@@ -19,6 +19,9 @@ export interface StudentSearchRequest {
   course?: string
   status?: string
   marca?: string
+  persona?: string
+  categoriaGrade?: string
+  IND_CONTRATO_ASSINADO?: string
   environment?: 'dev' | 'prod'
 }
 

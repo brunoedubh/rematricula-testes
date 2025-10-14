@@ -1,10 +1,7 @@
 <script setup lang="ts">
-
 const toast = useToast()
-
 const email = ref('')
 const loading = ref(false)
-
 </script>
 
 <template>
@@ -14,12 +11,10 @@ const loading = ref(false)
   />
 
   <UFooter :ui="{ top: 'border-b border-default' }">
-
     <template #left>
       <p class="text-muted text-sm">
-        Built with Nuxt UI • © {{ new Date().getFullYear() }}
+        Feito por Renovar • © {{ new Date().getFullYear() }}
       </p>
     </template>
-
   </UFooter>
 </template>

@@ -46,6 +46,14 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
     conditions.push(`COD_MARCA = ${searchParams.marca}`)
   }
 
+  if (searchParams.categoriaGrade) {
+    conditions.push(`COD_CATEGORIA_GRADE = ${searchParams.categoriaGrade}`)
+  }
+
+  if (searchParams.persona) {
+    conditions.push(`COD_TPO_PERSONA = ${searchParams.persona}`)
+  }
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
   return `
@@ -299,6 +307,14 @@ export function buildQueryParameters(searchParams: StudentSearchRequest): Record
 
   if (searchParams.marca) {
     params.marca = searchParams.marca
+  }
+
+  if (searchParams.persona) {
+    params.persona = searchParams.persona
+  }
+
+  if (searchParams.categoriaGrade) {
+    params.categoriaGrade = searchParams.categoriaGrade
   }
 
   return params

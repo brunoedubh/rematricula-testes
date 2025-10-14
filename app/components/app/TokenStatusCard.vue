@@ -14,8 +14,11 @@ async function loadTokensStatus() {
     if (response.success && response.tokens) {
       tokensStatus.value = response.tokens
     }
-  } catch (error) {
-    console.error('Failed to load tokens status:', error)
+  } catch (error: any) {
+    // Silenciar erros de autenticação (401) - componente só funciona em rotas autenticadas
+    if (error?.statusCode !== 401) {
+      console.error('Failed to load tokens status:', error)
+    }
   } finally {
     loading.value = false
   }

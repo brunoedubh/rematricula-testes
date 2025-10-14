@@ -1,11 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
-    '@nuxt/eslint',
     '@nuxt/image',
     '@nuxt/ui',
-    '@vueuse/nuxt',
-    'nuxt-og-image'
+    '@vueuse/nuxt'
   ],
 
   devtools: {
@@ -28,7 +26,9 @@ export default defineNuxtConfig({
         '/'
       ],
       crawlLinks: true
-    }
+    },
+    devProxy: {},
+    experimental: {}
   },
 
   runtimeConfig: {
@@ -59,15 +59,6 @@ export default defineNuxtConfig({
     // Public keys (exposed to the frontend)
     public: {
 
-    }
-  },
-
-  eslint: {
-    config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
     }
   }
 })

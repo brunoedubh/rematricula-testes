@@ -234,7 +234,7 @@ function handleAccessEnvironmentFromDetails(environment: 'dev' | 'hml' | 'prod')
           <template #header>
             <div class="flex items-center space-x-3">
               <div class="rounded-lg bg-blue-100 p-2">
-                <UIcon name="i-heroicons-database" class="h-6 w-6 text-blue-600" />
+                <UIcon name="i-heroicons-circle-stack" class="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900">Databricks</h3>
@@ -285,11 +285,15 @@ function handleAccessEnvironmentFromDetails(environment: 'dev' | 'hml' | 'prod')
           </div>
           <div class="flex items-center space-x-3">
             <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
-            <span class="text-sm">🔄 Botões de acesso por ambiente</span>
+            <span class="text-sm">✅ Botões de acesso por ambiente</span>
           </div>
           <div class="flex items-center space-x-3">
             <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
-            <span class="text-sm">🔄 Modal de confirmação para produção</span>
+            <span class="text-sm">✅ Modal de confirmação para produção</span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
+            <span class="text-sm">🔄 Remover bloqueio softlaunch</span>
           </div>
         </div>
       </UCard>

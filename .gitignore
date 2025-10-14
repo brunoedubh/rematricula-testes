@@ -5,6 +5,7 @@
 .nitro
 .cache
 dist
+rematricula_testes_build
 
 # Node dependencies
 node_modules

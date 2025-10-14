@@ -39,7 +39,10 @@ export default defineEventHandler(async (event: H3Event): Promise<TokenStatusRes
     }
 
   } catch (error: any) {
-    console.error('Token status error:', error)
+    // Não logar erros de autenticação (401) - são esperados em rotas públicas
+    if (error.statusCode !== 401) {
+      console.error('Token status error:', error)
+    }
 
     return {
       success: false,

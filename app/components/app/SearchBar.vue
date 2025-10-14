@@ -15,10 +15,37 @@ const emit = defineEmits<{
 const searchForm = defineModel<StudentSearchRequest>('searchForm', { required: true })
 
 const marcaOptions = ref<SelectItem[]>([
-  { label: 'Una', value: '1' },
-  { label: 'Unibh', value: '2' },
+  { label: 'UNIBH', value: '1' },
+  { label: 'UNA', value: '2' },
   { label: 'São Judas', value: '3' },
-  { label: 'UniFG', value: '4' }
+  { label: 'SOCIESC', value: '4' },
+  { label: 'AGES', value: '8' },
+  { label: 'FASEH', value: '11' },
+  { label: 'UNIFG', value: '12' },
+  { label: 'Unisul', value: '13' },
+  { label: 'UAM', value: '18' },
+  { label: 'MCampos', value: '24' },
+  { label: 'UNIFGUA', value: '26' },
+  { label: 'FPB', value: '27' },
+  { label: 'IBCMED', value: '28' },
+  { label: 'CEDEPE', value: '29' },
+  { label: 'BSP', value: '30' }
+])
+
+const personaOptions = ref<SelectItem[]>([
+  { label: 'Maria Eduarda', value: '5' },
+  { label: 'João Pedro', value: '8' },
+  { label: 'Vera Lucia', value: '7' },
+  { label: 'Maria Luiza', value: '10' },
+  { label: 'Ricardo', value: '1' },
+  { label: 'Julio Cesar', value: '6' }
+])
+
+const gradeOptions = ref<SelectItem[]>([
+  { label: 'E2A 2.0', value: '5' },
+  { label: 'E2A 1.0', value: '2' },
+  { label: 'Grades Antigas', value: '3' },
+  { label: 'E2A Radial', value: '11' }
 ])
 
 function handleSearch() {
@@ -53,7 +80,6 @@ function handleClear() {
             <UIcon name="i-heroicons-hashtag" class="h-4 w-4 text-gray-400" />
           </template>
         </UInput>
-
         <UInput
           v-model="searchForm.studentRA"
           placeholder="RA"
@@ -63,7 +89,6 @@ function handleClear() {
             <UIcon name="i-heroicons-hashtag" class="h-4 w-4 text-gray-400" />
           </template>
         </UInput>
-
         <UInput
           v-model="searchForm.searchTerm"
           placeholder="Nome, email ou CPF"
@@ -92,15 +117,22 @@ function handleClear() {
           </template>
         </UInput>
 
-        <UInput
-          v-model="searchForm.status"
-          placeholder="Status"
+        <USelect
+          v-model="searchForm.categoriaGrade"
+          :items="gradeOptions"
           size="lg"
-        >
-          <template #leading>
-            <UIcon name="i-heroicons-check-badge" class="h-4 w-4 text-gray-400" />
-          </template>
-        </UInput>
+          placeholder="Categoria Grade"
+          clearable
+        />
+
+        <USelect
+          v-model="searchForm.persona"
+          :items="personaOptions"
+          size="lg"
+          placeholder="Persona"
+          clearable
+        />
+        <UCheckbox v-model="searchForm.IND_CONTRATO_ASSINADO" size="lg" color="primary" label="Contrato Assinado" />
       </div>
 
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
