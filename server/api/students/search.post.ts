@@ -1,7 +1,12 @@
 import type { StudentSearchRequest, StudentSearchResponse } from '../../../types'
 import { getSessionFromEvent } from '../../utils/session'
-import { getDatabricksConfig, searchStudentsInDatabricks } from '../../utils/databricks'
+import { findStudents } from '../../repositories/databricksRepository'
 
+/**
+ * Endpoint para busca de alunos
+ * Busca apenas dados do Databricks (data warehouse)
+ * Status de bloqueio é buscado separadamente quando necessário
+ */
 export default defineEventHandler(async (event): Promise<StudentSearchResponse> => {
   try {
     // Verificar se o usuário está autenticado
@@ -14,25 +19,17 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
     }
 
     const body = await readBody(event) as StudentSearchRequest
-    const config = useRuntimeConfig()
 
     // Validação básica
-    if (!body.searchTerm && !body.studentCode && !body.studentRA && (!body.course && !body.marca)) {
+    if (!body.searchTerm && !body.studentCode && !body.studentRA && !body.course && !body.marca && !body.persona && !body.categoriaGrade && !body.IND_CONTRATO_ASSINADO ) {
       throw createError({
         statusCode: 400,
         message: 'Termo de busca ou código do aluno são obrigatórios'
       })
     }
 
-    // Obter configuração do Databricks
-    const databricksConfig = getDatabricksConfig(config)
-
-    // Buscar alunos no Databricks
-    const students = await searchStudentsInDatabricks(
-      databricksConfig,
-      body,
-      session?.email || ''
-    )
+    // Buscar alunos no Databricks (apenas dados do data warehouse)
+    const students = await findStudents(body, session.email)
 
     return {
       success: true,

@@ -6,6 +6,7 @@ export interface Aluno {
   // Identificação
   COD_ALUNO: number
   NUM_MATRICULA: string
+  NUM_CPF?: string
   NOM_ALUNO: string
 
   // Instituição e Marca
@@ -71,7 +72,7 @@ export interface Aluno {
   // Indicadores Financeiros e Contratuais
   IND_CONTRATO_LIBERADO?: string
   IND_REG_FINANCEIRO?: string
-  IND_CONTRATO_ASSINADO?: string
+  IND_CONTRATO_ASSINADO?: boolean
 
   // Indicadores Especiais
   IND_CALOURO?: string
@@ -80,10 +81,13 @@ export interface Aluno {
 
   // Campos adicionais (opcionais, para compatibilidade)
   email?: string
-  cpf?: string
-  telefone?: string
   data_nascimento?: string
   periodo_atual?: string
+
+  // Campos de bloqueio (Soft Launch)
+  bloqueado?: boolean
+  dataFimBloqueio?: string
+  COD_PERIODO_LETIVO?: number
 }
 
 /**
@@ -95,6 +99,7 @@ export interface SearchFilters {
   oferta?: string
   status?: string
   curso?: string
+  bloqueado?: 'bloqueados' | 'desbloqueados' | 'todos'
 }
 
 /**

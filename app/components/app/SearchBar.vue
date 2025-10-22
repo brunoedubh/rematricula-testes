@@ -48,6 +48,12 @@ const gradeOptions = ref<SelectItem[]>([
   { label: 'E2A Radial', value: '11' }
 ])
 
+const contratoAssOptions = ref<SelectItem[]>([
+  { label: 'Todos', value: null },
+  { label: 'Aceito', value: true },
+  { label: 'Não aceito', value: false }
+])
+
 function handleSearch() {
   emit('search')
 }
@@ -132,7 +138,14 @@ function handleClear() {
           placeholder="Persona"
           clearable
         />
-        <UCheckbox v-model="searchForm.IND_CONTRATO_ASSINADO" size="lg" color="primary" label="Contrato Assinado" />
+
+        <USelect
+          v-model="searchForm.IND_CONTRATO_ASSINADO"
+          :items="contratoAssOptions"
+          size="lg"
+          placeholder="Contrato"
+          clearable
+        />
       </div>
 
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">

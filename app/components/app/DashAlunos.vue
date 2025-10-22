@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Aluno, StudentSearchRequest } from '../../../types'
-import { useDebounceFn } from '@vueuse/core'
 import SearchBar from './SearchBar.vue'
 import StudentList from './StudentList.vue'
 import TokenStatusCard from './TokenStatusCard.vue'
 import StudentDetailsModal from './StudentDetailsModal.vue'
 import ProductionAccessModal from './ProductionAccessModal.vue'
+import PasswordPromptModal from './PasswordPromptModal.vue'
 
 // Estado da busca de alunos
 const searchForm = reactive<StudentSearchRequest>({
@@ -24,7 +24,7 @@ const hasSearched = ref(false)
 
 // Função de busca principal
 async function performSearch() {
-  if (!searchForm.studentCode && !searchForm.searchTerm && !searchForm.studentRA && !searchForm.course && !searchForm.marca) {
+  if (!searchForm.studentCode && !searchForm.searchTerm && !searchForm.studentRA && !searchForm.course && !searchForm.marca && !searchForm.persona && !searchForm.IND_CONTRATO_ASSINADO) {
     searchError.value = 'Informe pelo menos um critério de busca'
     return
   }
@@ -53,17 +53,7 @@ async function performSearch() {
   }
 }
 
-// Busca com debounce de 500ms
-const debouncedSearch = useDebounceFn(performSearch, 500)
-
-// Watcher para busca automática quando digitar (com debounce)
-watch([() => searchForm.searchTerm, () => searchForm.studentCode], ([newTerm, newCode]) => {
-  if (newTerm || newCode) {
-    debouncedSearch()
-  }
-})
-
-// Busca manual (sem debounce) ao clicar no botão
+// Busca manual ao clicar no botão
 function searchStudents() {
   performSearch()
 }
@@ -75,6 +65,9 @@ function clearSearch() {
   searchForm.marca = ''
   searchForm.course = ''
   searchForm.status = ''
+  searchForm.persona = ''
+  searchForm.categoriaGrade = ''
+  searchForm.IND_CONTRATO_ASSINADO = null
   searchResults.value = []
   searchError.value = null
   hasSearched.value = false
@@ -88,7 +81,9 @@ function clearError() {
 const selectedStudent = ref<Aluno | null>(null)
 const selectedStudentForDetails = ref<Aluno | null>(null)
 const selectedStudentForProduction = ref<Aluno | null>(null)
+const selectedStudentForPassword = ref<Aluno | null>(null)
 const pendingEnvironment = ref<'dev' | 'hml' | 'prod' | null>(null)
+const pendingEnvironmentForPassword = ref<'dev' | 'hml' | 'prod' | null>(null)
 
 // Toast notifications
 const toast = useToast()
@@ -131,6 +126,14 @@ async function generateAccessUrl(
       }
     }) as any
 
+    // Verificar se precisa de senha
+    if (!response.success && response.requiresPassword && !password) {
+      // Abrir modal de senha
+      selectedStudentForPassword.value = student
+      pendingEnvironmentForPassword.value = environment
+      return
+    }
+
     if (response.success && response.url) {
       // Abrir URL em nova aba
       window.open(response.url, '_blank')
@@ -141,14 +144,14 @@ async function generateAccessUrl(
           title: 'Token do Cache',
           description: `Usando token em cache para ${environment.toUpperCase()}`,
           icon: 'i-heroicons-clock',
-          color: 'blue'
+          color: 'info'
         })
       } else {
         toast.add({
           title: 'Novo Token Gerado',
           description: `Token gerado com sucesso para ${environment.toUpperCase()}`,
           icon: 'i-heroicons-check-circle',
-          color: 'green'
+          color: 'success'
         })
       }
 
@@ -156,14 +159,23 @@ async function generateAccessUrl(
       if (environment === 'prod') {
         selectedStudentForProduction.value = null
       }
+    } else if (!response.success) {
+      // Erro na resposta
+      toast.add({
+        title: 'Erro ao gerar acesso',
+        description: response.error || 'Erro ao gerar URL de acesso',
+        icon: 'i-heroicons-exclamation-triangle',
+        color: 'error'
+      })
     }
   } catch (error: any) {
     console.error('Error generating URL:', error)
+    // Erro de rede ou outro erro inesperado
     toast.add({
       title: 'Erro ao gerar acesso',
-      description: error.data?.message || 'Erro ao gerar URL de acesso',
+      description: error.message || 'Erro de conexão com o servidor',
       icon: 'i-heroicons-exclamation-triangle',
-      color: 'red'
+      color: 'error'
     })
   } finally {
     selectedStudent.value = null
@@ -177,6 +189,22 @@ function handleProductionConfirm(password: string) {
   }
 }
 
+function handlePasswordConfirm(password: string) {
+  if (selectedStudentForPassword.value && pendingEnvironmentForPassword.value) {
+    const student = selectedStudentForPassword.value
+    const env = pendingEnvironmentForPassword.value
+    // Fechar modal
+    closePasswordModal()
+    // Tentar novamente com a senha
+    generateAccessUrl(env, student, password)
+  }
+}
+
+function closePasswordModal() {
+  selectedStudentForPassword.value = null
+  pendingEnvironmentForPassword.value = null
+}
+
 function closeDetailsModal() {
   selectedStudentForDetails.value = null
 }
@@ -187,13 +215,19 @@ function closeProductionModal() {
   pendingEnvironment.value = null
 }
 
-function handleAccessEnvironmentFromDetails(environment: 'dev' | 'hml' | 'prod') {
-  if (selectedStudentForDetails.value) {
-    // Fechar modal de detalhes
-    closeDetailsModal()
-    // Abrir fluxo de acesso
-    handleAccessEnvironment(environment, selectedStudentForDetails.value)
-  }
+function handleAccessEnvironmentFromDetails(environment: 'dev' | 'hml' | 'prod', student: Aluno) {
+  console.log('[DashAlunos] handleAccessEnvironmentFromDetails called with:', environment, student)
+  // Salvar student antes de fechar o modal
+  const studentToAccess = student
+  // Fechar modal de detalhes
+  closeDetailsModal()
+  // Abrir fluxo de acesso com o student salvo
+  handleAccessEnvironment(environment, studentToAccess)
+}
+
+function handleStudentUnlocked() {
+  // Não precisa mais recarregar a busca, pois o status é carregado no modal
+  // O modal já atualiza o status após liberar/bloquear
 }
 </script>
 
@@ -305,11 +339,19 @@ function handleAccessEnvironmentFromDetails(environment: 'dev' | 'hml' | 'prod')
     :student="selectedStudentForDetails"
     @close="closeDetailsModal"
     @access-environment="handleAccessEnvironmentFromDetails"
+    @student-unlocked="handleStudentUnlocked"
   />
 
   <ProductionAccessModal
     :student="selectedStudentForProduction"
     @close="closeProductionModal"
     @confirm="handleProductionConfirm"
+  />
+
+  <PasswordPromptModal
+    :student="selectedStudentForPassword"
+    :environment="pendingEnvironmentForPassword"
+    @close="closePasswordModal"
+    @confirm="handlePasswordConfirm"
   />
 </template>

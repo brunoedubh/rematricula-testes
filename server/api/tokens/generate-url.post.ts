@@ -19,7 +19,7 @@ import { decrypt } from '../../utils/encryption'
 interface GenerateUrlRequest {
   studentCode: string
   environment: 'dev' | 'hml' | 'prod'
-  password?: string // Obrigatório para prod
+  password?: string // Obrigatório para prod, opcional para dev/hml quando sessão expirou
 }
 
 interface GenerateUrlResponse {
@@ -29,6 +29,7 @@ interface GenerateUrlResponse {
   minutes_remaining?: number
   environment?: string
   error?: string
+  requiresPassword?: boolean
 }
 
 export default defineEventHandler(async (event: H3Event): Promise<GenerateUrlResponse> => {
@@ -61,23 +62,35 @@ export default defineEventHandler(async (event: H3Event): Promise<GenerateUrlRes
       })
     }
 
-    // Para produção, senha é obrigatória
-    if (body.environment === 'prod' && !body.password) {
-      throw createError({
-        statusCode: 400,
-        message: 'Senha é obrigatória para acesso ao ambiente de produção'
-      })
-    }
-
     // Determinar senha a usar
     let password: string
 
     if (body.environment === 'prod') {
-      // Para produção, usar senha fornecida pelo usuário
-      password = body.password!
+      // Para produção, senha é obrigatória
+      if (!body.password) {
+        throw createError({
+          statusCode: 400,
+          message: 'Senha é obrigatória para acesso ao ambiente de produção'
+        })
+      }
+      password = body.password
     } else {
-      // Para dev/hml, usar senha descriptografada da sessão
-      password = decrypt(session.encrypted_password, config.encryptionKey)
+      // Para dev/hml, tentar usar senha da sessão primeiro
+      if (!session.encrypted_password || session.encrypted_password === '') {
+        // Sessão não tem senha (provavelmente após reload), solicitar senha
+        if (!body.password) {
+          // Retornar resposta normal (não erro HTTP) para que o frontend possa tratar
+          return {
+            success: false,
+            error: 'Senha é necessária. Por favor, informe sua senha.',
+            requiresPassword: true
+          }
+        }
+        password = body.password
+      } else {
+        // Usar senha da sessão se fornecida pelo usuário, senão descriptografar
+        password = body.password || decrypt(session.encrypted_password, config.encryptionKey)
+      }
     }
 
     // Gerar ou obter token do cache

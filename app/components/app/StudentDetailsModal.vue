@@ -7,7 +7,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  'access-environment': [environment: 'dev' | 'hml' | 'prod']
+  'access-environment': [environment: 'dev' | 'hml' | 'prod', student: Aluno]
+  'student-unlocked': []
 }>()
 
 const isOpen = computed({
@@ -19,76 +20,230 @@ const isOpen = computed({
   }
 })
 
+const toast = useToast()
+const isUnlocking = ref(false)
+const loadingBlockStatus = ref(false)
+const blockStatus = ref<{ bloqueado: boolean; dataFimBloqueio?: string } | null>(null)
+
+const loadingEnvironment = ref<'dev' | 'hml' | 'prod' | null>(null)
+
+// Buscar status de bloqueio quando o modal abrir
+watch(() => props.student, async (newStudent) => {
+  if (newStudent) {
+    await fetchBlockStatus()
+  } else {
+    // Limpar status quando fechar
+    blockStatus.value = null
+  }
+}, { immediate: true })
+
+async function fetchBlockStatus() {
+  if (!props.student) return
+
+  try {
+    loadingBlockStatus.value = true
+
+    const response = await $fetch('/api/students/block-status', {
+      method: 'POST',
+      body: {
+        codigocurso: props.student.COD_CURSO,
+        identificadorpersona: props.student.COD_TPO_PERSONA,
+        codigocampus: props.student.COD_CAMPUS,
+        codigoperiodoletivo: props.student.COD_PERIODO_LETIVO
+      }
+    })
+
+    if (response.success) {
+      blockStatus.value = {
+        bloqueado: response.bloqueado || false,
+        dataFimBloqueio: response.dataFimBloqueio
+      }
+    }
+  } catch (error: any) {
+    console.error('Erro ao buscar status de bloqueio:', error)
+    // Em caso de erro, assumir bloqueado por segurança
+    blockStatus.value = { bloqueado: true }
+  } finally {
+    loadingBlockStatus.value = false
+  }
+}
+
 function closeModal() {
   console.log('[StudentDetailsModal] closeModal called')
   emit('close')
 }
 
-function handleAccessEnvironment(environment: 'dev' | 'hml' | 'prod') {
-  emit('access-environment', environment)
+async function handleAccessEnvironment(environment: 'dev' | 'hml' | 'prod') {
+  if (!props.student) {
+    console.error('[StudentDetailsModal] Cannot access environment: student is null')
+    return
+  }
+
+  console.log('[StudentDetailsModal] handleAccessEnvironment called with:', environment)
+  loadingEnvironment.value = environment
+  emit('access-environment', environment, props.student)
+  console.log('[StudentDetailsModal] emitted access-environment')
+
+  // Reset loading após 5 segundos (fallback caso o parent não resete)
+  setTimeout(() => {
+    loadingEnvironment.value = null
+  }, 5000)
 }
 
-// Timeline de processos
-const timelineSteps = computed(() => {
+async function handleLiberarAluno() {
+  if (!props.student) return
+
+  try {
+    isUnlocking.value = true
+
+    const response = await $fetch('/api/students/liberar', {
+      method: 'POST',
+      body: {
+        codigocurso: props.student.COD_CURSO,
+        identificadorpersona: props.student.COD_TPO_PERSONA,
+        codigocampus: props.student.COD_CAMPUS,
+        codigoperiodoletivo: props.student.COD_PERIODO_LETIVO
+      }
+    })
+
+    if (response.success) {
+      toast.add({
+        title: 'Sucesso',
+        description: response.message,
+        color: 'success'
+      })
+      // Recarregar status de bloqueio
+      await fetchBlockStatus()
+      emit('student-unlocked')
+    } else {
+      toast.add({
+        title: 'Erro',
+        description: response.message || 'Erro ao liberar aluno',
+        color: 'error'
+      })
+    }
+  } catch (error: any) {
+    console.error('Erro ao liberar aluno:', error)
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao liberar aluno',
+      color: 'error'
+    })
+  } finally {
+    isUnlocking.value = false
+  }
+}
+
+async function handleEncerrarLiberacao() {
+  if (!props.student) return
+
+  try {
+    isUnlocking.value = true
+
+    const response = await $fetch('/api/students/unlock', {
+      method: 'POST',
+      body: {
+        codigocurso: props.student.COD_CURSO,
+        identificadorpersona: props.student.COD_TPO_PERSONA,
+        codigocampus: props.student.COD_CAMPUS,
+        codigoperiodoletivo: props.student.COD_PERIODO_LETIVO
+      }
+    })
+
+    if (response.success) {
+      toast.add({
+        title: 'Sucesso',
+        description: response.message,
+        color: 'success'
+      })
+      // Recarregar status de bloqueio
+      await fetchBlockStatus()
+      emit('student-unlocked')
+    } else {
+      toast.add({
+        title: 'Erro',
+        description: response.message || 'Erro ao encerrar liberação',
+        color: 'error'
+      })
+    }
+  } catch (error: any) {
+    console.error('Erro ao encerrar liberação:', error)
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao encerrar liberação',
+      color: 'error'
+    })
+  } finally {
+    isUnlocking.value = false
+  }
+}
+
+function formatDate(dateString?: string): string {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// Steps para o Stepper
+const stepperItems = computed(() => {
   if (!props.student) return []
 
   return [
     {
-      title: 'Registro Financeiro',
-      description: 'Verificação de pendências financeiras',
-      completed: props.student.IND_REG_FINANCEIRO === 'S',
-      icon: 'i-heroicons-currency-dollar',
-      field: 'IND_REG_FINANCEIRO'
+      label: 'Reg. Financeiro',
+      description: 'Pendências financeiras',
+      status: props.student.IND_REG_FINANCEIRO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-currency-dollar'
     },
     {
-      title: 'Liberação Executada',
-      description: 'Sistema executou processo de liberação',
-      completed: props.student.IND_EXECUTOU_LIBERACAO === 'S',
-      icon: 'i-heroicons-lock-open',
-      field: 'IND_EXECUTOU_LIBERACAO'
+      label: 'Liberação',
+      description: 'Processo executado',
+      status: props.student.IND_EXECUTOU_LIBERACAO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-lock-open'
     },
     {
-      title: 'Promoção Automática',
-      description: 'Aluno promovido para próximo período',
-      completed: props.student.IND_EXECUTOU_PROMOCAO === 'S',
-      icon: 'i-heroicons-arrow-trending-up',
-      field: 'IND_EXECUTOU_PROMOCAO'
+      label: 'Promoção',
+      description: 'Próximo período',
+      status: props.student.IND_EXECUTOU_PROMOCAO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-arrow-trending-up'
     },
     {
-      title: 'Contrato Liberado',
-      description: 'Contrato de rematrícula disponível',
-      completed: props.student.IND_CONTRATO_LIBERADO === 'S',
-      icon: 'i-heroicons-document-check',
-      field: 'IND_CONTRATO_LIBERADO'
+      label: 'Contrato',
+      description: 'Disponível',
+      status: props.student.IND_CONTRATO_LIBERADO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-document-check'
     },
     {
-      title: 'Oferta Confirmada',
-      description: 'Oferta principal confirmada pelo aluno',
-      completed: props.student.IND_CONFIRMADO_OFERTA_PRINC === 'S',
-      icon: 'i-heroicons-calendar-days',
-      field: 'IND_CONFIRMADO_OFERTA_PRINC'
+      label: 'Oferta',
+      description: 'Confirmada',
+      status: props.student.IND_CONFIRMADO_OFERTA_PRINC === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-calendar-days'
     },
     {
-      title: 'Horário Gerado',
-      description: 'Grade de horários disponível',
-      completed: props.student.IND_POSSUI_HORARIO === 'S',
-      icon: 'i-heroicons-clock',
-      field: 'IND_POSSUI_HORARIO'
+      label: 'Horário',
+      description: 'Possui Horário',
+      status: props.student.IND_POSSUI_HORARIO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-clock'
     },
     {
-      title: 'Contrato Liberado',
-      description: 'Contrato de rematrícula disponível',
-      completed: props.student.IND_CONTRATO_ASSINADO === 'S',
-      icon: 'i-heroicons-document-check',
-      field: 'IND_CONTRATO_ASSINADO'
+      label: 'Assinatura',
+      description: 'Contrato assinado',
+      status: props.student.IND_CONTRATO_ASSINADO === true ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-document-check'
     }
   ]
 })
 
 const processCompletionPercentage = computed(() => {
-  if (!timelineSteps.value.length) return 0
-  const completed = timelineSteps.value.filter(step => step.completed).length
-  return Math.round((completed / timelineSteps.value.length) * 100)
+  if (!stepperItems.value.length) return 0
+  const completed = stepperItems.value.filter(step => step.status === 'complete').length
+  return Math.round((completed / stepperItems.value.length) * 100)
 })
 </script>
 
@@ -107,7 +262,7 @@ const processCompletionPercentage = computed(() => {
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {{ student.NUM_MATRICULA }} - {{ student.NOM_ALUNO }}
-            </p>
+            </p>            
           </div>
           <UButton
             icon="i-heroicons-x-mark"
@@ -119,14 +274,18 @@ const processCompletionPercentage = computed(() => {
       </template>
 
       <div class="space-y-6">
+        <!-- Status de Soft Launch -->
+        
+
         <!-- Informações Gerais -->
         <div>
           <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            Informações Gerais
-          </h4>
-          <div class="grid grid-cols-2 gap-3 text-sm">
+            Informações Gerais            
+          </h4>         
+          
+          <div class="grid grid-cols-3 gap-3 text-sm">
             <div>
-              <span class="text-gray-500 dark:text-gray-400">Código:</span>
+              <span class="text-gray-500 dark:text-gray-400">Código Aluno:</span>
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.COD_ALUNO }}</p>
             </div>
             <div>
@@ -134,17 +293,23 @@ const processCompletionPercentage = computed(() => {
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.NUM_MATRICULA }}</p>
             </div>
             <div>
-              <span class="text-gray-500 dark:text-gray-400">Marca:</span>
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.DSC_MARCA }}</p>
+              <span class="text-gray-500 dark:text-gray-400">CPF:</span>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.NUM_CPF }}</p>
+            </div>
+            
+            <div>
+              <span class="text-gray-500 dark:text-gray-400">Marca/Instituição:</span>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.DSC_MARCA }} / {{ student.SGL_INSTITUICAO }}</p>
             </div>
             <div>
-              <span class="text-gray-500 dark:text-gray-400">Instituição:</span>
-              <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.SGL_INSTITUICAO }}</p>
-            </div>
-            <div class="col-span-2">
               <span class="text-gray-500 dark:text-gray-400">Curso:</span>
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.NOM_CURSO }}</p>
             </div>
+            <div>
+              <span class="text-gray-500 dark:text-gray-400">Categoria Grade:</span>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.DSC_CATEGORIA_GRADE }}</p>
+            </div>
+            
             <div>
               <span class="text-gray-500 dark:text-gray-400">Período:</span>
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.SGL_PERIODO_LETIVO }}</p>
@@ -153,10 +318,27 @@ const processCompletionPercentage = computed(() => {
               <span class="text-gray-500 dark:text-gray-400">Tipo Persona:</span>
               <p class="font-medium text-gray-900 dark:text-gray-100">{{ student.NOM_TPO_PERSONA }}</p>
             </div>
+          </div>          
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 text-sm">
+          <div v-if="student.IND_CALOURO == 'S'">
+            <UBadge color="success" variant="subtle">
+              <UIcon name="i-heroicons-arrow-right-circle" class="mr-1 h-3 w-3" />
+              Calouro
+            </UBadge>
+          </div>
+          <div v-else>
+            <UBadge color="info" variant="subtle">
+              <UIcon name="i-heroicons-academic-cap" class="mr-1 h-3 w-3" />
+              Veterano
+            </UBadge>
           </div>
         </div>
 
-        <!-- Timeline de Processos -->
+        
+
+        <!-- Stepper de Processos -->
         <div>
           <div class="flex items-center justify-between mb-4">
             <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -167,83 +349,102 @@ const processCompletionPercentage = computed(() => {
             </UBadge>
           </div>
 
-          <!-- Progress Bar -->
-          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-6">
+          <!-- Stepper Horizontal (Estático) -->
+          <div class="relative flex items-start justify-between gap-2 overflow-x-auto pb-2">
             <div
-              class="h-2 rounded-full transition-all duration-500"
-              :class="processCompletionPercentage === 100 ? 'bg-green-500' : 'bg-yellow-500'"
-              :style="{ width: `${processCompletionPercentage}%` }"
-            />
-          </div>
-
-          <!-- Timeline Steps -->
-          <div class="relative space-y-6">
-            <!-- Vertical Line -->
-            <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
-
-            <div
-              v-for="(step, index) in timelineSteps"
+              v-for="(item, index) in stepperItems"
               :key="index"
-              class="relative flex items-start gap-4"
+              class="flex flex-col items-center text-center gap-2 min-w-[80px] flex-1"
             >
-              <!-- Circle with Icon -->
-              <div
-                class="relative z-10 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors"
-                :class="step.completed
-                  ? 'bg-green-500 border-green-500 dark:bg-green-600 dark:border-green-600'
-                  : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600'"
-              >
-                <UIcon
-                  :name="step.completed ? 'i-heroicons-check' : step.icon"
-                  :class="step.completed ? 'text-white' : 'text-gray-400 dark:text-gray-500'"
-                  class="w-4 h-4"
+              <!-- Círculo do step -->
+              <div class="relative z-10">
+                <!-- Linha conectora à direita -->
+                <div
+                  v-if="index < stepperItems.length - 1"
+                  class="absolute top-1/2 left-[50px] w-[calc(100vw/7-60px)] h-0.5 -translate-y-1/2"
+                  :class="item.status === 'complete' ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-300 dark:bg-gray-600'"
                 />
+
+                <div
+                  class="relative flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors"
+                  :class="item.status === 'complete'
+                    ? 'bg-green-500 border-green-500 dark:bg-green-600 dark:border-green-600'
+                    : 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600'"
+                >
+                  <UIcon
+                    :name="item.status === 'complete' ? 'i-heroicons-check' : item.icon"
+                    :class="item.status === 'complete' ? 'text-white' : 'text-gray-400 dark:text-gray-500'"
+                    class="w-5 h-5"
+                  />
+                </div>
               </div>
 
-              <!-- Content -->
-              <div class="flex-1 pb-1">
-                <div class="flex items-center justify-between">
-                  <h5
-                    class="text-sm font-medium"
-                    :class="step.completed ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'"
-                  >
-                    {{ step.title }}
-                  </h5>
-                  <UBadge
-                    :color="step.completed ? 'success' : 'neutral'"
-                    variant="subtle"
-                    size="xs"
-                  >
-                    {{ step.completed ? 'Concluído' : 'Pendente' }}
-                  </UBadge>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {{ step.description }}
+              <!-- Labels -->
+              <div class="min-w-0 w-full">
+                <p
+                  class="text-xs font-medium truncate"
+                  :class="item.status === 'complete' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'"
+                >
+                  {{ item.label }}
+                </p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                  {{ item.description }}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Informações Adicionais -->
-        <div v-if="student.QTDE_DP_NA_MAT && student.QTDE_DP_NA_MAT > 0">
+        <div v-if="loadingBlockStatus">
           <UAlert
-            color="warning"
+            color="info"
             variant="soft"
-            icon="i-heroicons-exclamation-triangle"
-            title="Atenção"
+            icon="i-heroicons-arrow-path"
+            title="Carregando status de bloqueio..."
+          />
+        </div>
+        <div v-else-if="blockStatus">
+          <UAlert
+            :color="blockStatus.bloqueado ? 'error' : 'success'"
+            variant="soft"
+            :icon="blockStatus.bloqueado ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
+            :title="blockStatus.bloqueado ? 'Aluno Bloqueado (Fora do Soft Launch)' : 'Aluno Liberado (Soft Launch Ativo)'"
           >
-            Aluno possui {{ student.QTDE_DP_NA_MAT }} dependência(s) na matrícula
+            <template #description>
+              <div v-if="blockStatus.bloqueado">
+                <p class="mb-2">Este aluno não está liberado para o soft launch. Não possui acesso ao sistema de rematrícula.</p>
+                <UButton
+                  color="success"
+                  variant="soft"
+                  size="xs"
+                  :loading="isUnlocking"
+                  @click="handleLiberarAluno"
+                >
+                  <UIcon name="i-heroicons-lock-open" class="mr-1" />
+                  Liberar Aluno (1 dia)
+                </UButton>
+              </div>
+              <div v-else-if="!blockStatus.bloqueado && blockStatus.dataFimBloqueio">
+                <p class="mb-2">Este aluno está liberado no soft launch até {{ formatDate(blockStatus.dataFimBloqueio) }}</p>
+                <UButton
+                  color="warning"
+                  variant="soft"
+                  size="xs"
+                  :loading="isUnlocking"
+                  @click="handleEncerrarLiberacao"
+                >
+                  <UIcon name="i-heroicons-x-circle" class="mr-1" />
+                  Encerrar Liberação (Bloquear após hoje)
+                </UButton>
+              </div>
+            </template>
           </UAlert>
         </div>
-      </div>
 
+      </div>
       <template #footer>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div class="text-xs text-gray-500 dark:text-gray-400">
-            Ofertas:
-            <span v-if="student.IND_OFERTA_CORE === 'S'" class="ml-1">Core</span>
-            <span v-if="student.IND_OFERTA_UCDP === 'S'" class="ml-1">UCDP</span>
           </div>
           <div class="flex gap-2">
             <UButton
@@ -261,6 +462,22 @@ const processCompletionPercentage = computed(() => {
             >
               <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
               Acessar DEV
+            </UButton>
+            <UButton
+              color="primary"
+              size="sm"
+              @click="handleAccessEnvironment('hml')"
+            >
+              <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
+              Acessar HML
+            </UButton>
+            <UButton
+              color="primary"
+              size="sm"
+              @click="handleAccessEnvironment('prod')"
+            >
+              <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
+              Acessar PROD
             </UButton>
           </div>
         </div>

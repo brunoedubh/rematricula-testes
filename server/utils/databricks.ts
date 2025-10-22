@@ -7,51 +7,121 @@ import type { StudentSearchRequest, Aluno, DatabricksConfig, DatabricksQueryResu
  */
 
 /**
- * Constrói a query SQL para busca de alunos
+ * Escapa caracteres especiais para prevenir SQL Injection
+ * Remove caracteres perigosos e escapa aspas simples
+ */
+function sanitizeString(input: string): string {
+  // Remove caracteres perigosos e escapa aspas simples
+  return input
+    .replace(/'/g, "''")  // Escapa aspas simples (padrão SQL)
+    .replace(/;/g, '')     // Remove ponto e vírgula
+    .replace(/--/g, '')    // Remove comentários SQL
+    .replace(/\/\*/g, '')  // Remove início de comentário de bloco
+    .replace(/\*\//g, '')  // Remove fim de comentário de bloco
+    .replace(/xp_/gi, '')  // Remove comandos extended stored procedures
+}
+
+/**
+ * Valida e sanitiza um número inteiro
+ * Retorna null se inválido
+ */
+function sanitizeNumber(input: string | number | undefined): number | null {
+  if (input === undefined || input === null || input === '') {
+    return null
+  }
+
+  const num = typeof input === 'string' ? parseInt(input, 10) : input
+
+  // Valida se é um número válido e não é NaN
+  if (isNaN(num) || !isFinite(num)) {
+    return null
+  }
+
+  return num
+}
+
+/**
+ * Constrói a query SQL para busca de alunos de forma segura
  * Baseado na tabela alunos_rematricula conforme PLAN.md
+ * Usa sanitização para prevenir SQL Injection
  */
 export function buildStudentSearchQuery(searchParams: StudentSearchRequest): string {
   const conditions: string[] = []
 
-  // Busca por código do aluno
+  // Busca por código do aluno (validar que é número)
   if (searchParams.studentCode) {
-    conditions.push(`COD_ALUNO = ${searchParams.studentCode}`)
+    const code = sanitizeNumber(searchParams.studentCode)
+    if (code !== null) {
+      conditions.push(`COD_ALUNO = ${code}`)
+    }
   }
 
+  // Busca por RA (string numérica, pode ter zeros à esquerda)
   if (searchParams.studentRA) {
-    conditions.push(`NUM_MATRICULA = ${searchParams.studentRA}`)
+    // Validar que contém apenas dígitos
+    const ra = searchParams.studentRA.toString().trim()
+    if (/^\d+$/.test(ra) && ra.length > 0 && ra.length <= 20) {
+      conditions.push(`NUM_MATRICULA = '${ra}'`)
+    }
   }
 
-  // Busca por termo genérico (nome, matrícula)
+  // Busca por termo genérico (nome, CPF) - sanitizar string
   if (searchParams.searchTerm) {
-    const term = searchParams.searchTerm.toLowerCase()
-    conditions.push(`(
-      LOWER(NOM_ALUNO) LIKE '%${term}%' OR
-      NUM_CPF LIKE '%${term}%'
-    )`)
+    const term = sanitizeString(searchParams.searchTerm.toLowerCase())
+    // Limitar tamanho do termo para evitar ataques de DoS
+    if (term.length > 0 && term.length <= 100) {
+      conditions.push(`(
+        LOWER(NOM_ALUNO) LIKE '%${term}%' OR
+        NUM_CPF LIKE '%${term}%'
+      )`)
+    }
   }
 
-  // Filtro por curso
+  // Filtro por curso - sanitizar string
   if (searchParams.course) {
-    conditions.push(`LOWER(NOM_CURSO) LIKE '%${searchParams.course.toLowerCase()}%'`)
+    const course = sanitizeString(searchParams.course.toLowerCase())
+    if (course.length > 0 && course.length <= 100) {
+      conditions.push(`LOWER(NOM_CURSO) LIKE '%${course}%'`)
+    }
   }
 
-  // Filtro por status
+  // Filtro por status - sanitizar string
   if (searchParams.status) {
-    conditions.push(`DSC_STA_MATRICULA = '${searchParams.status}'`)
+    const status = sanitizeString(searchParams.status)
+    if (status.length > 0 && status.length <= 50) {
+      conditions.push(`DSC_STA_MATRICULA = '${status}'`)
+    }
   }
 
-  // Filtro por marca
+  // Filtro por marca (validar que é número)
   if (searchParams.marca) {
-    conditions.push(`COD_MARCA = ${searchParams.marca}`)
+    const marca = sanitizeNumber(searchParams.marca)
+    if (marca !== null) {
+      conditions.push(`COD_MARCA = ${marca}`)
+    }
   }
 
+  // Filtro por categoria de grade (validar que é número)
   if (searchParams.categoriaGrade) {
-    conditions.push(`COD_CATEGORIA_GRADE = ${searchParams.categoriaGrade}`)
+    const categoria = sanitizeNumber(searchParams.categoriaGrade)
+    if (categoria !== null) {
+      conditions.push(`COD_CATEGORIA_GRADE = ${categoria}`)
+    }
   }
 
+  // Filtro por persona (validar que é número)
   if (searchParams.persona) {
-    conditions.push(`COD_TPO_PERSONA = ${searchParams.persona}`)
+    const persona = sanitizeNumber(searchParams.persona)
+    if (persona !== null) {
+      conditions.push(`COD_TPO_PERSONA = ${persona}`)
+    }
+  }
+
+  if (searchParams.IND_CONTRATO_ASSINADO) {
+    const indcontassinado = searchParams.IND_CONTRATO_ASSINADO
+    if (indcontassinado === true || indcontassinado === false) {
+      conditions.push(`IND_CONTRATO_ASSINADO = ${indcontassinado}`)
+    }
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -59,13 +129,15 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
   return `
     SELECT
       COD_ALUNO,
-      NUM_MATRICULA,
+      NUM_MATRICULA,      
       DSC_MARCA,
       COD_MARCA,
       SGL_INSTITUICAO,
       SGL_PERIODO_LETIVO,
+      COD_PERIODO_LETIVO,
       NOM_ALUNO,
       NOM_CURSO,
+      COD_CAMPUS,
       NOM_TPO_PERSONA,
       DSC_TPO_GRD_CURRICULAR,
       DSC_CATEGORIA_GRADE,
@@ -84,11 +156,12 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
       IND_POSSUI_HORARIO,
       IND_NAO_POSSUI_HORARIO,
       IND_CONTRATO_LIBERADO,
-      IND_CONTRATO_ASSINADO
+      IND_CONTRATO_ASSINADO,
+      NUM_CPF
     FROM sb_jira.wv_alunos_rem
     ${whereClause}
     ORDER BY NOM_ALUNO ASC
-    LIMIT 50
+    LIMIT 10
   `.trim()
 }
 
@@ -133,11 +206,12 @@ export async function waitForQueryCompletion(
  * Faz o parse dos resultados da query do Databricks para objetos Aluno
  */
 export function parseStudentResults(data: any): Aluno[] {
+
   try {
     if (!data?.result?.data_array) {
       console.warn('No data_array in Databricks response')
       return []
-    }
+    }    
 
     return data.result.data_array.map((row: any[]) => ({
       COD_ALUNO: row[0],
@@ -146,27 +220,30 @@ export function parseStudentResults(data: any): Aluno[] {
       COD_MARCA: row[3],
       SGL_INSTITUICAO: row[4],
       SGL_PERIODO_LETIVO: row[5],
-      NOM_ALUNO: row[6],
-      NOM_CURSO: row[7],
-      NOM_TPO_PERSONA: row[8],
-      DSC_TPO_GRD_CURRICULAR: row[9],
-      DSC_CATEGORIA_GRADE: row[10],
-      IND_REG_FINANCEIRO: row[11],
-      IND_EXECUTOU_LIBERACAO: row[12],
-      IND_EXECUTOU_PROMOCAO: row[13],
-      IND_CALOURO: row[14],
-      IND_MEDICINA: row[15],
-      COD_CURSO: row[16],
-      COD_TPO_PERSONA: row[17],
-      COD_CATEGORIA_GRADE: row[18],
-      IND_CONFIRMADO_OFERTA_PRINC: row[19],
-      IND_OFERTA_UCDP: row[20],
-      IND_OFERTA_CORE: row[21],
-      QTDE_DP_NA_MAT: row[22],
-      IND_POSSUI_HORARIO: row[23],
-      IND_NAO_POSSUI_HORARIO: row[24],
-      IND_CONTRATO_LIBERADO: row[25],
-      IND_CONTRATO_ASSINADO: row[26]
+      COD_PERIODO_LETIVO: row[6],
+      NOM_ALUNO: row[7],
+      NOM_CURSO: row[8],
+      COD_CAMPUS: row[9],
+      NOM_TPO_PERSONA: row[10],
+      DSC_TPO_GRD_CURRICULAR: row[11],
+      DSC_CATEGORIA_GRADE: row[12],
+      IND_REG_FINANCEIRO: row[13],
+      IND_EXECUTOU_LIBERACAO: row[14],
+      IND_EXECUTOU_PROMOCAO: row[15],
+      IND_CALOURO: row[16],
+      IND_MEDICINA: row[17],
+      COD_CURSO: row[18],
+      COD_TPO_PERSONA: row[19],
+      COD_CATEGORIA_GRADE: row[20],
+      IND_CONFIRMADO_OFERTA_PRINC: row[21],
+      IND_OFERTA_UCDP: row[22],
+      IND_OFERTA_CORE: row[23],
+      QTDE_DP_NA_MAT: row[24],
+      IND_POSSUI_HORARIO: row[25],
+      IND_NAO_POSSUI_HORARIO: row[26],
+      IND_CONTRATO_LIBERADO: row[27],
+      IND_CONTRATO_ASSINADO: row[28],
+      NUM_CPF: row[29]
     }))
   } catch (error) {
     console.error('Error parsing student results:', error)
