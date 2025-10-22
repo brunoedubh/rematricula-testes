@@ -261,8 +261,6 @@ export async function executeQuery(
   parameters?: Record<string, unknown>
 ): Promise<any> {
   try {
-    console.log(query);
-
     const response = await fetch(`${config.host}/api/2.0/sql/statements`, {
       method: 'POST',
       headers: {

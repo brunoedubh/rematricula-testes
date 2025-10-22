@@ -62,14 +62,12 @@ watch(() => props.student, () => {
           <span class="font-medium text-gray-900">
             {{ student.NUM_MATRICULA }} - {{ student.NOM_ALUNO }}
           </span>
-          <UBadge color="secondary" variant="subtle">
-            {{ student.DSC_MARCA }}
-          </UBadge>
+          
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4 text-sm text-gray-600">
           <div>
-            <span class="font-medium">Instituição:</span> {{ student.SGL_INSTITUICAO }}
+            <span class="font-medium">Marca:</span> {{ student.DSC_MARCA }}
           </div>
           <div>
             <span class="font-medium">Curso:</span> {{ student.NOM_CURSO }}

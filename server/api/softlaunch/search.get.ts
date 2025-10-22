@@ -2,7 +2,7 @@ import { getDb } from '../../utils/db_soft'
 
 export default defineEventHandler(async () => {
   const db = getDb()
-
+/*
   try {
     const result = await db.query(`
       SELECT *
@@ -22,5 +22,5 @@ export default defineEventHandler(async () => {
       message: 'Erro ao conectar com o banco de dados PostgreSQL',
       data: error instanceof Error ? error.message : 'Erro desconhecido'
     })
-  }
+  }*/
 })

@@ -294,43 +294,6 @@ function handleStudentUnlocked() {
 
         <TokenStatusCard />
       </div>
-
-      <!-- Próximas Funcionalidades -->
-      <UCard>
-        <template #header>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-rocket-launch" class="h-5 w-5 text-gray-400" />
-            <h3 class="font-semibold text-gray-900">Próximas Funcionalidades</h3>
-          </div>
-        </template>
-
-        <div class="space-y-3">
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-check-circle" class="h-5 w-5 text-green-500" />
-            <span class="text-sm">✅ Sistema de autenticação individual</span>
-          </div>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-check-circle" class="h-5 w-5 text-green-500" />
-            <span class="text-sm">✅ Integração com Databricks</span>
-          </div>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-check-circle" class="h-5 w-5 text-green-500" />
-            <span class="text-sm">✅ Sistema de tokens com cache</span>
-          </div>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
-            <span class="text-sm">✅ Botões de acesso por ambiente</span>
-          </div>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
-            <span class="text-sm">✅ Modal de confirmação para produção</span>
-          </div>
-          <div class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-clock" class="h-5 w-5 text-yellow-500" />
-            <span class="text-sm">🔄 Remover bloqueio softlaunch</span>
-          </div>
-        </div>
-      </UCard>
     </div>
   </UContainer>
 

@@ -140,10 +140,6 @@ export async function checkMultipleStudentsBlockStatus(
         AND datafim >= CURRENT_TIMESTAMP
       ORDER BY datafim DESC
     `
-
-    console.log('[checkMultipleStudentsBlockStatus] Query:', query)
-    console.log('[checkMultipleStudentsBlockStatus] Values:', values)
-
     const result = await db.query(query, values)
 
     // Criar mapa com as LIBERAÇÕES encontradas (alunos com permissão ativa)
@@ -155,7 +151,7 @@ export async function checkMultipleStudentsBlockStatus(
       }
     })
 
-    console.log('[checkMultipleStudentsBlockStatus] Unlocked students:', unlockedStudents.size)
+    //console.log('[checkMultipleStudentsBlockStatus] Unlocked students:', unlockedStudents.size)
 
     // Preencher o mapa de status para todos os alunos
     // LÓGICA INVERTIDA: Se TEM no mapa = DESBLOQUEADO, se NÃO TEM = BLOQUEADO
@@ -251,8 +247,6 @@ export async function liberarAluno(
       `, [codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo])
     }
 
-    console.log('[liberarAluno] Rows affected:', result.rowCount)
-
     if (result.rowCount && result.rowCount > 0) {
       return {
         success: true,
@@ -304,8 +298,6 @@ export async function unlockStudent(
         AND codigonivelcurso = 1
         AND codigoregra = 'a511dd31-b291-4b09-a94f-52e95936d418'
     `, [codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo])
-
-    console.log('[unlockStudent] Rows affected:', result.rowCount)
 
     if (result.rowCount && result.rowCount > 0) {
       return {

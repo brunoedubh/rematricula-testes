@@ -196,6 +196,12 @@ const stepperItems = computed(() => {
 
   return [
     {
+      label: 'Horário',
+      description: 'Possui Horário',
+      status: props.student.IND_POSSUI_HORARIO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-clock'
+    },
+    {
       label: 'Reg. Financeiro',
       description: 'Pendências financeiras',
       status: props.student.IND_REG_FINANCEIRO === 'S' ? 'complete' : 'incomplete',
@@ -203,38 +209,32 @@ const stepperItems = computed(() => {
     },
     {
       label: 'Liberação',
-      description: 'Processo executado',
+      description: 'Executou liberação',
       status: props.student.IND_EXECUTOU_LIBERACAO === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-lock-open'
     },
     {
-      label: 'Promoção',
-      description: 'Próximo período',
-      status: props.student.IND_EXECUTOU_PROMOCAO === 'S' ? 'complete' : 'incomplete',
-      icon: 'i-heroicons-arrow-trending-up'
-    },
-    {
-      label: 'Contrato',
-      description: 'Disponível',
+      label: 'Contrato Financeiro',
+      description: 'Contrato liberado',
       status: props.student.IND_CONTRATO_LIBERADO === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-document-check'
     },
     {
-      label: 'Oferta',
+      label: 'Promoção',
+      description: 'Executou promoção',
+      status: props.student.IND_EXECUTOU_PROMOCAO === 'S' ? 'complete' : 'incomplete',
+      icon: 'i-heroicons-arrow-trending-up'
+    },    
+    {
+      label: 'Oferta principal',
       description: 'Confirmada',
       status: props.student.IND_CONFIRMADO_OFERTA_PRINC === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-calendar-days'
-    },
-    {
-      label: 'Horário',
-      description: 'Possui Horário',
-      status: props.student.IND_POSSUI_HORARIO === 'S' ? 'complete' : 'incomplete',
-      icon: 'i-heroicons-clock'
-    },
+    },    
     {
       label: 'Assinatura',
       description: 'Contrato assinado',
-      status: props.student.IND_CONTRATO_ASSINADO === true ? 'complete' : 'incomplete',
+      status: props.student.IND_CONTRATO_ASSINADO ? 'complete' : 'incomplete',
       icon: 'i-heroicons-document-check'
     }
   ]
@@ -338,6 +338,8 @@ const processCompletionPercentage = computed(() => {
 
         
 
+        
+
         <!-- Stepper de Processos -->
         <div>
           <div class="flex items-center justify-between mb-4">
@@ -395,53 +397,106 @@ const processCompletionPercentage = computed(() => {
           </div>
         </div>
 
-        <div v-if="loadingBlockStatus">
-          <UAlert
-            color="info"
-            variant="soft"
-            icon="i-heroicons-arrow-path"
-            title="Carregando status de bloqueio..."
-          />
-        </div>
-        <div v-else-if="blockStatus">
-          <UAlert
-            :color="blockStatus.bloqueado ? 'error' : 'success'"
-            variant="soft"
-            :icon="blockStatus.bloqueado ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
-            :title="blockStatus.bloqueado ? 'Aluno Bloqueado (Fora do Soft Launch)' : 'Aluno Liberado (Soft Launch Ativo)'"
-          >
-            <template #description>
-              <div v-if="blockStatus.bloqueado">
-                <p class="mb-2">Este aluno não está liberado para o soft launch. Não possui acesso ao sistema de rematrícula.</p>
-                <UButton
-                  color="success"
-                  variant="soft"
-                  size="xs"
-                  :loading="isUnlocking"
-                  @click="handleLiberarAluno"
-                >
-                  <UIcon name="i-heroicons-lock-open" class="mr-1" />
-                  Liberar Aluno (1 dia)
-                </UButton>
+        
+
+        <div>
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            Simulação
+          </h4>
+
+          <!-- Status de Soft Launch e Botões de Acesso -->
+          <div v-if="loadingBlockStatus" class="mb-4">
+            <UAlert
+              color="info"
+              variant="soft"
+              icon="i-heroicons-arrow-path"
+              title="Carregando status..."
+            />
+          </div>
+
+          <div v-else-if="blockStatus" class="space-y-3">
+            <!-- Status Badge Compacto -->
+            <div class="flex items-center justify-between p-3 rounded-lg border"
+              :class="blockStatus.bloqueado
+                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900'
+                : 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900'">
+              <div class="flex items-center gap-2">
+                <UIcon
+                  :name="blockStatus.bloqueado ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
+                  :class="blockStatus.bloqueado ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'"
+                  class="w-5 h-5"
+                />
+                <div>
+                  <p class="text-sm font-medium" :class="blockStatus.bloqueado ? 'text-red-900 dark:text-red-100' : 'text-green-900 dark:text-green-100'">
+                    {{ blockStatus.bloqueado ? 'Bloqueado (Fora do Soft Launch)' : 'Liberado (Soft Launch Ativo)' }}
+                  </p>
+                  <p class="text-xs" :class="blockStatus.bloqueado ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'">
+                    <span v-if="blockStatus.bloqueado">Sem acesso ao sistema de rematrícula</span>
+                    <span v-else-if="blockStatus.dataFimBloqueio">Liberado até {{ formatDate(blockStatus.dataFimBloqueio) }}</span>
+                  </p>
+                </div>
               </div>
-              <div v-else-if="!blockStatus.bloqueado && blockStatus.dataFimBloqueio">
-                <p class="mb-2">Este aluno está liberado no soft launch até {{ formatDate(blockStatus.dataFimBloqueio) }}</p>
-                <UButton
-                  color="warning"
-                  variant="soft"
-                  size="xs"
-                  :loading="isUnlocking"
-                  @click="handleEncerrarLiberacao"
-                >
-                  <UIcon name="i-heroicons-x-circle" class="mr-1" />
-                  Encerrar Liberação (Bloquear após hoje)
-                </UButton>
-              </div>
-            </template>
-          </UAlert>
+
+              <!-- Botão de ação do status -->
+              <UButton
+                v-if="blockStatus.bloqueado"
+                color="success"
+                variant="soft"
+                size="xs"
+                :loading="isUnlocking"
+                @click="handleLiberarAluno"
+              >
+                <UIcon name="i-heroicons-lock-open" class="mr-1" />
+                Liberar (1 dia)
+              </UButton>
+              <UButton
+                v-else-if="blockStatus.dataFimBloqueio"
+                color="warning"
+                variant="soft"
+                size="xs"
+                :loading="isUnlocking"
+                @click="handleEncerrarLiberacao"
+              >
+                <UIcon name="i-heroicons-x-circle" class="mr-1" />
+                Encerrar
+              </UButton>
+            </div>
+
+            <!-- Botões de Acesso aos Ambientes -->
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                color="primary"
+                size="sm"
+                @click="handleAccessEnvironment('dev')"
+                class="flex-1 sm:flex-none"
+              >
+                <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
+                Acessar DEV
+              </UButton>
+              <UButton
+                color="primary"
+                size="sm"
+                @click="handleAccessEnvironment('hml')"
+                class="flex-1 sm:flex-none"
+              >
+                <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
+                Acessar HML
+              </UButton>
+              <UButton
+                color="warning"
+                size="sm"
+                @click="handleAccessEnvironment('prod')"
+                class="flex-1 sm:flex-none"
+              >
+                <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
+                Acessar PROD
+              </UButton>
+            </div>
+          </div>
         </div>
 
       </div>
+      
       <template #footer>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -455,30 +510,7 @@ const processCompletionPercentage = computed(() => {
             >
               Fechar
             </UButton>
-            <UButton
-              color="primary"
-              size="sm"
-              @click="handleAccessEnvironment('dev')"
-            >
-              <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
-              Acessar DEV
-            </UButton>
-            <UButton
-              color="primary"
-              size="sm"
-              @click="handleAccessEnvironment('hml')"
-            >
-              <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
-              Acessar HML
-            </UButton>
-            <UButton
-              color="primary"
-              size="sm"
-              @click="handleAccessEnvironment('prod')"
-            >
-              <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
-              Acessar PROD
-            </UButton>
+           
           </div>
         </div>
       </template>
