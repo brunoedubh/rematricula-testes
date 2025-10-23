@@ -215,7 +215,7 @@ const stepperItems = computed(() => {
     },
     {
       label: 'Contrato Financeiro',
-      description: 'Contrato liberado',
+      description: 'Liberação contrato',
       status: props.student.IND_CONTRATO_LIBERADO === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-document-check'
     },
@@ -227,14 +227,14 @@ const stepperItems = computed(() => {
     },    
     {
       label: 'Oferta principal',
-      description: 'Confirmada',
+      description: 'Confirmação',
       status: props.student.IND_CONFIRMADO_OFERTA_PRINC === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-calendar-days'
     },    
     {
-      label: 'Assinatura',
-      description: 'Contrato assinado',
-      status: props.student.IND_CONTRATO_ASSINADO ? 'complete' : 'incomplete',
+      label: 'Contrato',
+      description: 'Aceite contrato',
+      status: props.student.IND_CONTRATO_ASSINADO === 'S' ? 'complete' : 'incomplete',
       icon: 'i-heroicons-document-check'
     }
   ]
@@ -334,11 +334,8 @@ const processCompletionPercentage = computed(() => {
               Veterano
             </UBadge>
           </div>
-        </div>
+        </div>    
 
-        
-
-        
 
         <!-- Stepper de Processos -->
         <div>

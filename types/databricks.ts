@@ -21,7 +21,8 @@ export interface StudentSearchRequest {
   marca?: string
   persona?: string
   categoriaGrade?: string
-  IND_CONTRATO_ASSINADO?: boolean
+  IND_CONTRATO_ASSINADO?: string
+  IND_CALOURO?: 'S' | 'N'
   environment?: 'dev' | 'hml' | 'prod'
   bloqueado?: 'bloqueados' | 'desbloqueados' | 'todos'
 }

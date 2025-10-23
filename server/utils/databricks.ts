@@ -119,8 +119,15 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
 
   if (searchParams.IND_CONTRATO_ASSINADO) {
     const indcontassinado = searchParams.IND_CONTRATO_ASSINADO
-    if (indcontassinado === true || indcontassinado === false) {
-      conditions.push(`IND_CONTRATO_ASSINADO = ${indcontassinado}`)
+    if (indcontassinado === 'S' || indcontassinado === 'N') {
+      conditions.push(`IND_CONTRATO_ASSINADO = '${indcontassinado}'`)
+    }
+  }
+
+  if (searchParams.IND_CALOURO) {
+    const indcalouro = searchParams.IND_CALOURO
+    if (indcalouro === 'S' || indcalouro === 'N') {
+      conditions.push(`IND_CALOURO= '${indcalouro}'`)
     }
   }
 
@@ -321,7 +328,7 @@ export async function searchStudentsInDatabricks(
     // 2. Construir query
     const query = buildStudentSearchQuery(searchParams)
 
-    console.log(`[DATABRICKS] Executing query for user ${userEmail}:`, query.substring(0, 200))
+    console.log(`[DATABRICKS] Executando busca ...`)
 
     // 3. Executar query
     const data = await executeQuery(config, token, query)
@@ -330,7 +337,7 @@ export async function searchStudentsInDatabricks(
     const students = parseStudentResults(data)
 
     // 5. Log de auditoria
-    console.log(`[AUDIT] ${userEmail} buscou alunos - ${students.length} resultados encontrados`)
+    console.log(`[DATABRICKS] ${userEmail} buscou alunos - ${students.length} resultados encontrados`)
 
     return students
   } catch (error) {

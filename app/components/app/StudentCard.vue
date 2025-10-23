@@ -62,46 +62,67 @@ watch(() => props.student, () => {
           <span class="font-medium text-gray-900">
             {{ student.NUM_MATRICULA }} - {{ student.NOM_ALUNO }}
           </span>
+          <div v-if="student.IND_CALOURO == 'S'">
+            <UBadge color="neutral" variant="subtle">
+              <UIcon name="i-heroicons-arrow-right-circle" class="mr-1 h-3 w-3" />
+              Calouro
+            </UBadge>
+          </div>
+          <div v-else>
+            <UBadge color="neutral" variant="subtle">
+              <UIcon name="i-heroicons-academic-cap" class="mr-1 h-3 w-3" />
+              Veterano
+            </UBadge>
+          </div>
           
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4 text-sm text-gray-600">
           <div>
             <span class="font-medium">Marca:</span> {{ student.DSC_MARCA }}
-          </div>
+          </div>          
+          
           <div>
             <span class="font-medium">Curso:</span> {{ student.NOM_CURSO }}
-          </div>
-          <div v-if="student.IND_CALOURO == 'S'">
-            <UBadge color="success" variant="subtle">
-              <UIcon name="i-heroicons-arrow-right-circle" class="mr-1 h-3 w-3" />
-              Calouro
-            </UBadge>
-          </div>
-          <div v-else>
-            <UBadge color="info" variant="subtle">
-              <UIcon name="i-heroicons-academic-cap" class="mr-1 h-3 w-3" />
-              Veterano
-            </UBadge>
-          </div>
-          <div>
-            <span class="font-medium">Categoria grade:</span>
-            <UBadge
-              :color="getStatusColor(student.DSC_STA_MATRICULA)"
-              variant="subtle"
-            >
-              {{ student.DSC_CATEGORIA_GRADE }}
-            </UBadge>
           </div>
           <div>
             <span class="font-medium">Período:</span> {{ student.SGL_PERIODO_LETIVO }}
           </div>
-          <div v-if="student.IND_CONTRATO_LIBERADO">
-            <UBadge color="success" variant="subtle">
-              <UIcon name="i-heroicons-check-circle" class="mr-1 h-3 w-3" />
-              Contrato Liberado
-            </UBadge>
+          
+          <div>
+            <span class="font-medium">Categoria grade:</span>
+              {{ student.DSC_CATEGORIA_GRADE }}
           </div>
+
+          <template v-if="student.IND_CONTRATO_LIBERADO=== 'S'">
+            <div>
+              <UBadge color="success" variant="subtle">
+                <UIcon name="i-heroicons-document-currency-dollar" class="mr-1 h-3 w-3" />
+                Contrato Liberado
+              </UBadge>
+            </div>
+            <div v-if="student.IND_CONTRATO_ASSINADO === 'S'">
+              <UBadge color="success" variant="subtle">
+                <UIcon name="i-heroicons-document" class="mr-1 h-3 w-3" />
+                Contrato Assinado
+              </UBadge>
+            </div>
+            <div v-else>
+              <UBadge color="neutral" variant="subtle">
+                <UIcon name="i-heroicons-document" class="mr-1 h-3 w-3" />
+                Aguardando aceite
+              </UBadge>
+            </div>
+          </template>
+          <template v-else>
+            <div>
+              <UBadge color="neutral" variant="subtle">
+                <UIcon name="i-heroicons-document-currency-dollar" class="mr-1 h-3 w-3" />
+                Contrato Não liberado
+              </UBadge>
+            </div>
+            <div></div>            
+          </template>    
         </div>
       </div>
 
@@ -120,7 +141,8 @@ watch(() => props.student, () => {
           <UButton
             variant="soft"
             size="xs"
-            color="blue"
+            color="info"
+            icon="i-heroicons-arrow-top-right-on-square"
             :loading="loadingEnvironment === 'dev'"
             @click="handleAccessEnvironment('dev')"
           >
@@ -129,7 +151,8 @@ watch(() => props.student, () => {
           <UButton
             variant="soft"
             size="xs"
-            color="yellow"
+            color="info"
+            icon="i-heroicons-arrow-top-right-on-square"
             :loading="loadingEnvironment === 'hml'"
             @click="handleAccessEnvironment('hml')"
           >
@@ -138,7 +161,8 @@ watch(() => props.student, () => {
           <UButton
             variant="soft"
             size="xs"
-            color="red"
+            color="warning"
+            icon="i-heroicons-arrow-top-right-on-square"
             :loading="loadingEnvironment === 'prod'"
             @click="handleAccessEnvironment('prod')"
           >

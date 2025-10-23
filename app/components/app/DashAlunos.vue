@@ -14,7 +14,9 @@ const searchForm = reactive<StudentSearchRequest>({
   searchTerm: '',
   marca: '',
   course: '',
-  status: ''
+  status: '',
+  IND_CONTRATO_ASSINADO: '',
+  IND_CALOURO: 'N'
 })
 
 const searching = ref(false)
@@ -67,7 +69,8 @@ function clearSearch() {
   searchForm.status = ''
   searchForm.persona = ''
   searchForm.categoriaGrade = ''
-  searchForm.IND_CONTRATO_ASSINADO = null
+  searchForm.IND_CONTRATO_ASSINADO = ''
+  searchForm.IND_CALOURO = 'N'
   searchResults.value = []
   searchError.value = null
   hasSearched.value = false

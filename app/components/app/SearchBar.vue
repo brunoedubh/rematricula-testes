@@ -49,9 +49,13 @@ const gradeOptions = ref<SelectItem[]>([
 ])
 
 const contratoAssOptions = ref<SelectItem[]>([
-  { label: 'Todos', value: null },
-  { label: 'Aceito', value: true },
-  { label: 'Não aceito', value: false }
+  { label: 'Aceito', value: 'S' },
+  { label: 'Não aceito', value: 'N' }
+])
+
+const TipoAlunoOptions = ref<SelectItem[]>([
+  { label: 'Calouro', value: 'S' },
+  { label: 'Veterano', value: 'N' }
 ])
 
 function handleSearch() {
@@ -97,7 +101,7 @@ function handleClear() {
         </UInput>
         <UInput
           v-model="searchForm.searchTerm"
-          placeholder="Nome, email ou CPF"
+          placeholder="Nome ou CPF"
           size="lg"
         >
           <template #leading>
@@ -144,6 +148,13 @@ function handleClear() {
           :items="contratoAssOptions"
           size="lg"
           placeholder="Contrato"
+          clearable
+        />
+        <USelect
+          v-model="searchForm.IND_CALOURO"
+          :items="TipoAlunoOptions"
+          size="lg"
+          placeholder="Tipo Aluno"
           clearable
         />
       </div>

@@ -72,7 +72,7 @@ export interface Aluno {
   // Indicadores Financeiros e Contratuais
   IND_CONTRATO_LIBERADO?: string
   IND_REG_FINANCEIRO?: string
-  IND_CONTRATO_ASSINADO?: boolean
+  IND_CONTRATO_ASSINADO?: string
 
   // Indicadores Especiais
   IND_CALOURO?: string
@@ -99,6 +99,7 @@ export interface SearchFilters {
   oferta?: string
   status?: string
   curso?: string
+  IND_CONTRATO_ASSINADO: string
   bloqueado?: 'bloqueados' | 'desbloqueados' | 'todos'
 }
 
