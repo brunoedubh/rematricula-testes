@@ -49,6 +49,15 @@ export default defineNuxtConfig({
     databricksCatalog: process.env.DATABRICKS_CATALOG || 'hive_metastore',
     databricksSchema: process.env.DATABRICKS_SCHEMA || 'default',
 
+    // PostgreSQL Softlaunch Configuration
+    dbSoftHost: process.env.DB_SOFT_HOST,
+    dbSoftPort: process.env.DB_SOFT_PORT || '5432',
+    dbSoftName: process.env.DB_SOFT_NAME,
+    dbSoftUser: process.env.DB_SOFT_USER,
+    dbSoftPassword: process.env.DB_SOFT_PASSWORD,
+    dbSoftSsl: process.env.DB_SOFT_SSL || 'true',
+    dbSoftSchema: process.env.DB_SOFT_SCHEMA || 'public',
+
     allowedDomain: process.env.ALLOWED_DOMAIN || 'animaeducacao.com.br',
 
     // URLs base por ambiente (server-side)

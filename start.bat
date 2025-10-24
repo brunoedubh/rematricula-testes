@@ -1,5 +1,5 @@
 @echo off
-title Minha Aplicacao
+title Rematricula Testes
 color 0A
 cls
 
@@ -12,14 +12,14 @@ echo.
 
 REM Define a porta
 set PORT=3000
-set HOST=127.0.0.1
+set HOST=localhost
 
 REM Verifica se a porta já está em uso
 netstat -ano | findstr ":%PORT%" >nul
 if %ERRORLEVEL% EQU 0 (
     echo AVISO: A porta %PORT% ja esta em uso.
     echo Tentando porta alternativa...
-    set PORT=8081
+    set PORT=3001
 )
 
 echo Servidor iniciara em: http://localhost:%PORT%
@@ -28,8 +28,8 @@ echo Aguarde... O navegador abrira automaticamente.
 echo Para FECHAR a aplicacao, feche esta janela.
 echo.
 
-REM Aguarda 3 segundos e abre o navegador
-timeout /t 3 >nul
+REM Aguarda 2 segundos e abre o navegador
+timeout /t 2 >nul
 start http://localhost:%PORT%
 
 REM Inicia o servidor com Node portátil

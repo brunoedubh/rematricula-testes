@@ -5,17 +5,18 @@ let pool: Pool | null = null
 
 export const getDb = () => {
   if (!pool) {
+    const config = useRuntimeConfig()
     pool = new Pool({
-      host: process.env.DB_SOFT_HOST,
-      port: parseInt(process.env.DB_SOFT_PORT || '5432'),
-      database: process.env.DB_SOFT_NAME,
-      user: process.env.DB_SOFT_USER,
-      password: process.env.DB_SOFT_PASSWORD,
-      ssl: process.env.DB_SOFT_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      host: config.dbSoftHost,
+      port: parseInt(config.dbSoftPort),
+      database: config.dbSoftName,
+      user: config.dbSoftUser,
+      password: config.dbSoftPassword,
+      ssl: config.dbSoftSsl === 'true' ? { rejectUnauthorized: false } : false,
       max: 20, // número máximo de conexões no pool
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
-      options: `-c search_path=${process.env.DB_SOFT_SCHEMA || 'public'}`
+      options: `-c search_path=${config.dbSoftSchema}`
     })
   }
   return pool

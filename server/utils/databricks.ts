@@ -179,11 +179,15 @@ export async function waitForQueryCompletion(
   host: string,
   token: string,
   statementId: string,
-  maxWaitTime = 50000
+  maxWaitTime = 120000 // Aumentado para 120 segundos (2 minutos)
 ): Promise<any> {
   const startTime = Date.now()
+  let attemptCount = 0
 
   while (Date.now() - startTime < maxWaitTime) {
+    attemptCount++
+    const elapsed = Date.now() - startTime
+
     const response = await fetch(`${host}/api/2.0/sql/statements/${statementId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -192,21 +196,37 @@ export async function waitForQueryCompletion(
 
     if (response.ok) {
       const data = await response.json()
+      const state = data.status?.state?.toLowerCase()
 
-      if (data.status?.state?.toLowerCase() === 'succeeded') {
+      console.log(`[DATABRICKS] Query status check #${attemptCount} (${Math.round(elapsed/1000)}s): ${state}`)
+
+      if (state === 'succeeded') {
+        console.log(`[DATABRICKS] Query completed in ${Math.round(elapsed/1000)}s`)
         return data
       }
 
-      if (data.status?.state?.toLowerCase() === 'failed') {
+      if (state === 'failed') {
         throw new Error(`Query failed in Databricks: ${data.status?.error?.message || 'Unknown error'}`)
       }
+
+      // Estados: pending, running, succeeded, failed
+      if (state === 'pending' || state === 'running') {
+        // Aguardar tempo progressivo: 500ms, 1s, 2s, 3s, depois 3s fixo
+        const waitTime = attemptCount === 1 ? 500 :
+                        attemptCount === 2 ? 1000 :
+                        attemptCount === 3 ? 2000 : 3000
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        continue
+      }
+    } else {
+      console.error(`[DATABRICKS] Error checking query status (attempt ${attemptCount}):`, response.status)
     }
 
     // Aguardar 1 segundo antes de tentar novamente
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 
-  throw new Error('Query timeout')
+  throw new Error(`Query timeout after ${Math.round(maxWaitTime/1000)}s`)
 }
 
 /**
@@ -268,6 +288,9 @@ export async function executeQuery(
   parameters?: Record<string, unknown>
 ): Promise<any> {
   try {
+    console.log('[DATABRICKS] Iniciando execução da query...')
+    const startTime = Date.now()
+
     const response = await fetch(`${config.host}/api/2.0/sql/statements`, {
       method: 'POST',
       headers: {
@@ -280,21 +303,26 @@ export async function executeQuery(
         catalog: config.catalog,
         schema: config.schema,
         parameters: parameters || {},
-        wait_timeout: '50s'
+        wait_timeout: '120s' // Aumentado para 120 segundos
       })
     })
 
+    const responseTime = Date.now() - startTime
+    console.log(`[DATABRICKS] Resposta inicial recebida em ${responseTime}ms`)
+
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Databricks query failed:', errorData)
+      console.error('[DATABRICKS] Query failed:', errorData)
       throw new Error(`Falha na consulta ao Databricks: ${errorData.message || 'Unknown error'}`)
     }
 
     const data = await response.json()
+    const state = data.status?.state?.toLowerCase()
+    console.log(`[DATABRICKS] Estado inicial da query: ${state}`)
 
     // Aguardar conclusão da query se necessário
-    const state = data.status?.state?.toLowerCase()
     if (state === 'pending' || state === 'running') {
+      console.log('[DATABRICKS] Query ainda processando, aguardando conclusão...')
       return await waitForQueryCompletion(
         config.host,
         token,
@@ -302,9 +330,14 @@ export async function executeQuery(
       )
     }
 
+    if (state === 'succeeded') {
+      const totalTime = Date.now() - startTime
+      console.log(`[DATABRICKS] Query completou imediatamente em ${totalTime}ms`)
+    }
+
     return data
   } catch (error) {
-    console.error('Error executing Databricks query:', error)
+    console.error('[DATABRICKS] Error executing query:', error)
     throw error
   }
 }
