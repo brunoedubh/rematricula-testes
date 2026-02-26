@@ -290,7 +290,7 @@ function handleStudentUnlocked() {
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Data atualização</span>
-              <span class="text-sm text-gray-900">22/08/2025</span>
+              <span class="text-sm text-gray-900">22/01/2026</span>
             </div>
           </div>
         </UCard>

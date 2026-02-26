@@ -303,7 +303,7 @@ export async function executeQuery(
         catalog: config.catalog,
         schema: config.schema,
         parameters: parameters || {},
-        wait_timeout: '120s' // Aumentado para 120 segundos
+        wait_timeout: '50s' // Aumentado para 120 segundos
       })
     })
 
@@ -357,6 +357,8 @@ export async function searchStudentsInDatabricks(
     if (!token) {
       throw new Error('Databricks token não configurado')
     }
+
+    
 
     // 2. Construir query
     const query = buildStudentSearchQuery(searchParams)

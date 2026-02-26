@@ -61,7 +61,7 @@ cd rematricula-testes
 ### 2. Instale as dependências
 
 ```bash
-npm install
+pnpm install
 # ou
 pnpm install
 ```
@@ -134,8 +134,6 @@ Certifique-se de que você tem:
 ### Iniciar o servidor de desenvolvimento
 
 ```bash
-npm run dev
-# ou
 pnpm dev
 ```
 
@@ -144,16 +142,12 @@ O servidor estará disponível em [http://localhost:3000](http://localhost:3000)
 ### Build para produção
 
 ```bash
-npm run build
-# ou
 pnpm build
 ```
 
 ### Visualizar build de produção
 
 ```bash
-npm run preview
-# ou
 pnpm preview
 ```
 
