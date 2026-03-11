@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import DashAlunos from '~/components/app/DashAlunos.vue'
+import DashPendencias from '~/components/app/DashPendencias.vue'
 
-const title = 'Rematrícula - Dashboard'
-const description = 'Sistema de rematrícula de alunos'
+const title = 'Rematrícula - Pendências'
+const description = 'Visão geral das pendências de alunos'
 
 useSeoMeta({
   titleTemplate: '',
@@ -14,5 +14,5 @@ useSeoMeta({
 </script>
 
 <template>
-  <DashAlunos />
+  <DashPendencias />
 </template>

@@ -4,7 +4,8 @@
       "Bash(npm run build:*)",
       "WebSearch",
       "Read(//d/**)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(node -e \":*)"
     ],
     "deny": [],
     "ask": []

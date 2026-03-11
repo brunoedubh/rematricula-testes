@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wireframe — Dashboard de Pendências (Redesign)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', cursive;
+      background: #f0f0f0;
+      color: #111;
+      font-size: 13px;
+    }
+
+    /* ── Legend bar ── */
+    .legend-bar {
+      background: #fff;
+      border-bottom: 2px solid #ccc;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .legend-bar strong { font-size: 14px; color: #333; }
+    .badge-reuse { background: #4CAF50; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .badge-new { background: #FF9800; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+    /* ── App shell ── */
+    .shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .app-header {
+      background: #fff;
+      border-bottom: 2px solid #bbb;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo { font-size: 18px; font-weight: bold; color: #222; border: 2px solid #aaa; padding: 4px 10px; border-radius: 6px; }
+    .header-nav { display: flex; gap: 16px; }
+    .nav-item { padding: 4px 10px; border-radius: 4px; color: #444; font-size: 13px; border: 1px solid transparent; cursor: pointer; }
+    .nav-item.active { border-color: #999; background: #f5f5f5; font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #666; }
+    .avatar-box { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-size: 12px; background: #f0f0f0; }
+
+    /* Main content */
+    .page { max-width: 1280px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Page header */
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .page-title { font-size: 22px; font-weight: bold; color: #111; }
+    .page-sub { font-size: 12px; color: #666; margin-top: 4px; }
+    .btn-outline { border: 2px solid #bbb; background: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; display: flex; align-items: center; gap: 6px; color: #333; }
+    .icon-placeholder { display: inline-block; width: 14px; height: 14px; border: 1.5px solid currentColor; border-radius: 2px; vertical-align: middle; }
+
+    /* ── HERO SECTION (NEW) ── */
+    .hero-section {
+      border: 2px dashed #999;
+      border-radius: 10px;
+      background: #fafafa;
+      padding: 24px;
+      position: relative;
+    }
+    .hero-section-label {
+      position: absolute;
+      top: -12px;
+      left: 16px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    /* Donut hero */
+    .donut-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .donut-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 16px solid #ddd;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        conic-gradient(#555 0% 72%, #ddd 72% 100%);
+    }
+    .donut-inner {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #fafafa;
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e0e0e0;
+    }
+    .donut-pct { font-size: 22px; font-weight: bold; color: #111; }
+    .donut-label { font-size: 10px; color: #777; text-align: center; line-height: 1.2; }
+    .donut-caption { font-size: 11px; color: #555; text-align: center; }
+
+    /* Stacked bar + stats */
+    .hero-right { display: flex; flex-direction: column; gap: 16px; }
+    .hero-title { font-size: 16px; font-weight: bold; color: #222; }
+    .hero-desc { font-size: 12px; color: #666; }
+
+    /* Stacked horizontal bar */
+    .stacked-bar-wrap { }
+    .stacked-bar-label { font-size: 11px; color: #555; margin-bottom: 4px; font-weight: bold; }
+    .stacked-bar {
+      display: flex;
+      height: 22px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1.5px solid #bbb;
+    }
+    .bar-green { background: repeating-linear-gradient(45deg, #888, #888 2px, #aaa 2px, #aaa 6px); flex: 72; }
+    .bar-red { background: repeating-linear-gradient(45deg, #555, #555 2px, #777 2px, #777 6px); flex: 28; }
+    .stacked-legend { display: flex; gap: 16px; margin-top: 6px; }
+    .sl-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+    .sl-dot-g { width: 10px; height: 10px; background: #888; border-radius: 2px; }
+    .sl-dot-r { width: 10px; height: 10px; background: #555; border-radius: 2px; }
+
+    /* Mini KPI row inside hero */
+    .mini-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .mini-kpi {
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    .mini-kpi-label { font-size: 10px; color: #777; margin-bottom: 2px; }
+    .mini-kpi-value { font-size: 20px; font-weight: bold; color: #222; }
+    .mini-kpi-sub { font-size: 10px; color: #999; margin-top: 1px; }
+
+    /* ── 4 METRIC CARDS ── */
+    .metric-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 14px; }
+    .metric-card {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card.primary { border-color: #888; }
+    .metric-card-icon { width: 36px; height: 36px; border-radius: 8px; background: #f0f0f0; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .icon-sq { width: 18px; height: 18px; background: #bbb; border-radius: 2px; }
+    .metric-label { font-size: 11px; color: #777; margin-bottom: 4px; }
+    .metric-value { font-size: 28px; font-weight: bold; color: #111; font-family: monospace; }
+    .metric-value.danger { color: #555; }
+    .metric-delta { font-size: 10px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .delta-arrow { font-size: 12px; }
+    .metric-bar-wrap { margin-top: 8px; }
+    .metric-bar-track { height: 4px; background: #e0e0e0; border-radius: 2px; }
+    .metric-bar-fill { height: 4px; background: #777; border-radius: 2px; }
+    .metric-bg-icon { position: absolute; right: -10px; bottom: -10px; width: 70px; height: 70px; background: #f5f5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .metric-bg-sq { width: 36px; height: 36px; background: #e0e0e0; border-radius: 4px; }
+    .card-badge { position: absolute; top: 10px; right: 10px; background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 1px 6px; font-size: 10px; color: #555; }
+
+    /* ── SPLIT CONTENT SECTION ── */
+    .split-content { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .content-panel {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .panel-header {
+      border-bottom: 1.5px solid #ddd;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title { font-size: 14px; font-weight: bold; color: #222; display: flex; align-items: center; gap: 7px; }
+    .panel-icon { width: 16px; height: 16px; background: #ddd; border-radius: 3px; }
+    .panel-badge { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 1px 7px; font-size: 10px; color: #555; }
+    .panel-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Type rows with bar chart */
+    .type-row { display: flex; flex-direction: column; gap: 4px; }
+    .type-row-top { display: flex; align-items: center; justify-content: space-between; }
+    .type-name { font-size: 12px; color: #333; font-weight: bold; }
+    .type-count { font-size: 12px; font-weight: bold; color: #111; font-family: monospace; }
+    .type-bar-track { height: 8px; background: #efefef; border-radius: 4px; border: 1px solid #e0e0e0; }
+    .type-bar-fill { height: 8px; border-radius: 4px; background: repeating-linear-gradient(45deg, #888, #888 2px, #aaa 2px, #aaa 5px); }
+    .type-sub { font-size: 10px; color: #999; }
+    .type-badge { background: #f0f0f0; border: 1px solid #ddd; border-radius: 3px; padding: 0 5px; font-size: 9px; color: #666; }
+
+    /* Alunos críticos panel */
+    .aluno-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .aluno-row:last-child { border-bottom: none; }
+    .aluno-rank { width: 20px; font-size: 11px; color: #999; text-align: center; font-weight: bold; }
+    .aluno-avatar { width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; flex-shrink: 0; }
+    .aluno-info { flex: 1; min-width: 0; }
+    .aluno-name { font-size: 12px; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aluno-mat { font-size: 10px; color: #999; }
+    .aluno-severity { display: flex; align-items: center; gap: 4px; }
+    .sev-pip { width: 8px; height: 8px; border-radius: 50%; background: #888; }
+    .sev-pip.high { background: #555; }
+    .sev-count { font-size: 12px; font-weight: bold; color: #333; }
+
+    /* ── FULL TABLE SECTION ── */
+    .full-table-section {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .table-header {
+      border-bottom: 1.5px solid #ddd;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .table-title { font-size: 14px; font-weight: bold; color: #222; }
+    .table-controls { display: flex; align-items: center; gap: 10px; }
+    .search-box { border: 1.5px solid #ccc; border-radius: 6px; padding: 4px 10px; font-family: inherit; font-size: 12px; background: #f9f9f9; display: flex; align-items: center; gap: 6px; }
+    .search-placeholder { color: #aaa; }
+    .filter-btn { border: 1.5px solid #ccc; border-radius: 6px; padding: 4px 10px; font-family: inherit; font-size: 12px; background: #fff; color: #555; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 2px solid #ddd; background: #f9f9f9; }
+    th { padding: 8px 14px; text-align: left; font-size: 11px; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #333; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .td-name { font-weight: bold; color: #111; }
+    .td-mat { color: #888; font-size: 11px; font-family: monospace; }
+    .td-pends { display: flex; align-items: center; gap: 6px; }
+    .pend-pill { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; border: 1.5px solid #bbb; background: #f0f0f0; }
+    .pend-pill.critical { background: #e0e0e0; border-color: #888; }
+    .pend-pips { display: flex; gap: 2px; }
+    .pip { width: 7px; height: 7px; border-radius: 50%; background: #ccc; }
+    .pip.filled { background: #777; }
+    .expand-btn { border: 1px solid #ccc; background: #f5f5f5; border-radius: 4px; padding: 1px 6px; font-size: 11px; color: #777; cursor: pointer; }
+    .td-types { font-size: 10px; color: #777; max-width: 200px; }
+    .type-tag { display: inline-block; border: 1px solid #ccc; border-radius: 3px; padding: 0 5px; margin: 1px; background: #f5f5f5; }
+
+    /* Reuse/New component badge overlays */
+    .comp-wrap { position: relative; display: contents; }
+    .comp-tag {
+      position: absolute;
+      top: -10px;
+      right: -4px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      z-index: 50;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .reuse { background: #4CAF50; color: white; }
+    .new-comp { background: #FF9800; color: white; }
+
+    /* section label */
+    .section-note {
+      font-size: 10px;
+      color: #999;
+      border: 1px dashed #ccc;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-style: italic;
+    }
+
+    /* Tabs (reuse) */
+    .tabs-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #ddd;
+      padding: 0 16px;
+    }
+    .tab-item {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-item.active { color: #222; border-bottom-color: #444; font-weight: bold; }
+
+    /* Section separator */
+    .section-sep {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #888;
+      font-weight: bold;
+    }
+    .sep-line { flex: 1; height: 1px; background: #ddd; }
+
+    /* Annotations */
+    .annotation {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #fffbe6;
+      border: 1.5px dashed #f0c040;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #555;
+      margin-top: 6px;
+    }
+    .ann-icon { font-size: 14px; flex-shrink: 0; }
+
+    /* Tooltip hint */
+    .hint {
+      position: absolute;
+      bottom: 6px;
+      left: 10px;
+      font-size: 9px;
+      color: #bbb;
+      font-style: italic;
+    }
+
+    @media (max-width: 900px) {
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .split-content { grid-template-columns: 1fr; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .mini-kpis { grid-template-columns: 1fr 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Legend ── -->
+<div class="legend-bar">
+  <strong>Componentes:</strong>
+  <div class="legend-item"><span class="badge-reuse">[REUSE]</span> Componente existente</div>
+  <div class="legend-item"><span class="badge-new">[NEW]</span> Novo componente a criar</div>
+  <div style="flex:1"></div>
+  <div class="legend-item" style="font-size:11px; color:#666;">🖊 Wireframe — Balsamiq-style (escala de cinza)</div>
+  <div class="legend-item" style="font-size:11px; color:#666;">Foco: visão geral de impacto para o aluno</div>
+</div>
+
+<!-- ── App Shell ── -->
+<div class="shell">
+
+  <!-- App Header -->
+  <!-- REUSABLE: AppHeader.vue -->
+  <div class="app-header" style="position:relative;">
+    <span class="comp-tag reuse" style="position:absolute; top:4px; left:4px;">[REUSE] AppHeader.vue</span>
+    <div class="header-logo">ã Anima</div>
+    <div class="header-nav">
+      <div class="nav-item active">Pendências</div>
+      <div class="nav-item">Alunos</div>
+      <div class="nav-item">Tokens</div>
+    </div>
+    <div class="header-right">
+      <span>☀</span>
+      <div class="avatar-box">B</div>
+      <span style="font-size:11px;">usuario@animaeducacao.com.br ▾</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page">
+
+    <!-- ── Page Header ── -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">📋 Visão Geral — Rematrícula</div>
+        <div class="page-sub">Impacto de pendências por tipo e por aluno · Atualizado às 14:30:00</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="section-note">Databricks · Atualização diária D-1</div>
+        <!-- REUSABLE: UButton -->
+        <div style="position:relative; display:inline-block;">
+          <span class="comp-tag reuse" style="top:-10px; right:-4px;">[REUSE] UButton</span>
+          <button class="btn-outline">⟳ Atualizar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!-- ── NOVA: HERO IMPACT SECTION ── -->
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+    <!-- NEW COMPONENT: ImpactHeroCard -->
+    <div class="hero-section" style="position:relative;">
+      <div class="hero-section-label">[NEW] ImpactHeroCard</div>
+
+      <div class="hero-inner">
+
+        <!-- Donut grande (visual principal) -->
+        <!-- NEW COMPONENT: DonutProgressChart -->
+        <div style="position:relative;">
+          <span class="comp-tag new-comp" style="top:-10px; right:-4px;">[NEW] DonutProgressChart</span>
+          <div class="donut-hero">
+            <div class="donut-circle">
+              <div class="donut-inner">
+                <span class="donut-pct">72%</span>
+                <span class="donut-label">Aptos<br/>sem bloqueio</span>
+              </div>
+            </div>
+            <div class="donut-caption">Progresso geral da rematrícula</div>
+          </div>
+        </div>
+
+        <!-- Right side -->
+        <div class="hero-right">
+          <div>
+            <div class="hero-title">Impacto na Rematrícula dos Alunos</div>
+            <div class="hero-desc">De <strong>12.450</strong> alunos aptos, <strong>3.486</strong> (28%) ainda possuem pendências ativas que bloqueiam o processo.</div>
+          </div>
+
+          <!-- Stacked bar — NEW -->
+          <!-- NEW COMPONENT: StackedImpactBar -->
+          <div class="stacked-bar-wrap" style="position:relative;">
+            <span class="comp-tag new-comp" style="top:-10px; right:-4px;">[NEW] StackedImpactBar</span>
+            <div class="stacked-bar-label">Distribuição dos alunos aptos</div>
+            <div class="stacked-bar">
+              <div class="bar-green" title="8.964 sem pendência"></div>
+              <div class="bar-red" title="3.486 com pendência"></div>
+            </div>
+            <div class="stacked-legend">
+              <div class="sl-item"><div class="sl-dot-g"></div> 8.964 sem pendência (72%)</div>
+              <div class="sl-item"><div class="sl-dot-r"></div> 3.486 com pendência (28%)</div>
+            </div>
+          </div>
+
+          <!-- Mini KPIs -->
+          <div class="mini-kpis">
+            <!-- REUSABLE: UCard (3x) -->
+            <div class="mini-kpi" style="position:relative;">
+              <span class="comp-tag reuse" style="top:-10px; right:-4px;">[REUSE] UCard</span>
+              <div class="mini-kpi-label">Total de Pendências Ativas</div>
+              <div class="mini-kpi-value">7.219</div>
+              <div class="mini-kpi-sub">↑ +3,2% vs ontem</div>
+            </div>
+            <div class="mini-kpi" style="position:relative;">
+              <span class="comp-tag reuse" style="top:-10px; right:-4px;">[REUSE] UCard</span>
+              <div class="mini-kpi-label">Alunos c/ 3+ pendências</div>
+              <div class="mini-kpi-value">641</div>
+              <div class="mini-kpi-sub" style="color:#888;">⚠ Atenção prioritária</div>
+            </div>
+            <div class="mini-kpi" style="position:relative;">
+              <span class="comp-tag reuse" style="top:-10px; right:-4px;">[REUSE] UCard</span>
+              <div class="mini-kpi-label">Média de pendências</div>
+              <div class="mini-kpi-value">2,1</div>
+              <div class="mini-kpi-sub">por aluno afetado</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="annotation" style="margin-top:16px;">
+        <span class="ann-icon">💡</span>
+        <span>Esta seção substitui o card de "Progresso" atual (pequeno donut + texto) por um painel de impacto visual de alta densidade — o operador consegue avaliar a situação sem ler números detalhados.</span>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!-- ── SPLIT: Tipo × Alunos Críticos ── -->
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+    <div class="section-sep"><div class="sep-line"></div>Detalhamento<div class="sep-line"></div></div>
+
+    <div class="split-content">
+
+      <!-- LEFT: Impacto por Tipo (bar chart list) -->
+      <!-- NEW COMPONENT: TipoPendenciaBarList -->
+      <div class="content-panel" style="position:relative;">
+        <span class="comp-tag new-comp" style="top:4px; right:8px; position:absolute;">[NEW] TipoPendenciaBarList</span>
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Pendências por Tipo
+          </div>
+          <span class="panel-badge">8 tipos ativos</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="annotation" style="margin-bottom:4px;">
+            <span class="ann-icon">💡</span>
+            <span>Cada tipo mostra uma barra proporcional ao % de alunos afetados do total. Hoje os tipos são exibidos como cards sem comparação visual entre si.</span>
+          </div>
+
+          <!-- Type rows (sample) -->
+          <div class="type-row">
+            <div class="type-row-top">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="type-name">Pendência Financeira</span>
+                <span class="type-badge">ALUNO</span>
+              </div>
+              <span class="type-count">1.842</span>
+            </div>
+            <div class="type-bar-track"><div class="type-bar-fill" style="width:53%"></div></div>
+            <div class="type-sub">14,8% dos alunos aptos · <strong>53% das pendências</strong></div>
+          </div>
+
+          <div class="type-row">
+            <div class="type-row-top">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="type-name">Contrato não assinado</span>
+                <span class="type-badge">ALUNO</span>
+              </div>
+              <span class="type-count">1.204</span>
+            </div>
+            <div class="type-bar-track"><div class="type-bar-fill" style="width:35%"></div></div>
+            <div class="type-sub">9,7% dos alunos aptos · 35% das pendências</div>
+          </div>
+
+          <div class="type-row">
+            <div class="type-row-top">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="type-name">Sem oferta confirmada</span>
+                <span class="type-badge">TURMA</span>
+                <span class="type-badge" style="border-color:#aaa;">Pré-matrícula</span>
+              </div>
+              <span class="type-count">871</span>
+            </div>
+            <div class="type-bar-track"><div class="type-bar-fill" style="width:25%"></div></div>
+            <div class="type-sub">7,0% dos alunos aptos · 25% das pendências</div>
+          </div>
+
+          <div class="type-row">
+            <div class="type-row-top">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="type-name">DP não confirmado</span>
+                <span class="type-badge">CURSO</span>
+              </div>
+              <span class="type-count">643</span>
+            </div>
+            <div class="type-bar-track"><div class="type-bar-fill" style="width:18%"></div></div>
+            <div class="type-sub">5,2% dos alunos aptos</div>
+          </div>
+
+          <div class="type-row">
+            <div class="type-row-top">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="type-name">Pendência Acadêmica E2A2</span>
+                <span class="type-badge">ALUNO</span>
+              </div>
+              <span class="type-count">312</span>
+            </div>
+            <div class="type-bar-track"><div class="type-bar-fill" style="width:9%"></div></div>
+            <div class="type-sub">2,5% dos alunos aptos</div>
+          </div>
+
+          <div style="text-align:center; padding-top:4px;">
+            <button class="btn-outline" style="font-size:11px; width:100%; justify-content:center;">
+              Ver todos os 8 tipos ↓
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: Top Alunos Críticos -->
+      <!-- NEW COMPONENT: TopAlunosCriticosPanel -->
+      <div class="content-panel" style="position:relative;">
+        <span class="comp-tag new-comp" style="top:4px; right:8px; position:absolute;">[NEW] TopAlunosCriticosPanel</span>
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="panel-icon"></div>
+            Alunos mais Afetados
+          </div>
+          <span class="panel-badge">Top 10</span>
+        </div>
+        <div class="panel-body" style="padding-top:8px;">
+
+          <div class="annotation" style="margin-bottom:6px;">
+            <span class="ann-icon">💡</span>
+            <span>Lista priorizada: alunos com maior número de pendências aparecem primeiro, com chips indicando quais tipos os afetam. Ausente no design atual.</span>
+          </div>
+
+          <!-- Aluno rows -->
+          <div class="aluno-row">
+            <div class="aluno-rank">1</div>
+            <div class="aluno-avatar">JC</div>
+            <div class="aluno-info">
+              <div class="aluno-name">João Carlos Ferreira</div>
+              <div class="aluno-mat">RA: 2021034562 · UAM</div>
+            </div>
+            <div class="aluno-severity">
+              <div class="pend-pips"><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div></div>
+              <span class="sev-count">5</span>
+            </div>
+          </div>
+
+          <div class="aluno-row">
+            <div class="aluno-rank">2</div>
+            <div class="aluno-avatar">MS</div>
+            <div class="aluno-info">
+              <div class="aluno-name">Maria da Silva Santos</div>
+              <div class="aluno-mat">RA: 2020019871 · UNA</div>
+            </div>
+            <div class="aluno-severity">
+              <div class="pend-pips"><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div></div>
+              <span class="sev-count">4</span>
+            </div>
+          </div>
+
+          <div class="aluno-row">
+            <div class="aluno-rank">3</div>
+            <div class="aluno-avatar">PO</div>
+            <div class="aluno-info">
+              <div class="aluno-name">Pedro Oliveira Souza</div>
+              <div class="aluno-mat">RA: 2022008834 · UNIBH</div>
+            </div>
+            <div class="aluno-severity">
+              <div class="pend-pips"><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div></div>
+              <span class="sev-count">4</span>
+            </div>
+          </div>
+
+          <div class="aluno-row">
+            <div class="aluno-rank">4</div>
+            <div class="aluno-avatar">AC</div>
+            <div class="aluno-info">
+              <div class="aluno-name">Ana Carolina Lima</div>
+              <div class="aluno-mat">RA: 2019045221 · São Judas</div>
+            </div>
+            <div class="aluno-severity">
+              <div class="pend-pips"><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div><div class="pip"></div></div>
+              <span class="sev-count">3</span>
+            </div>
+          </div>
+
+          <div class="aluno-row">
+            <div class="aluno-rank">5</div>
+            <div class="aluno-avatar">RL</div>
+            <div class="aluno-info">
+              <div class="aluno-name">Ricardo Lopes Mendes</div>
+              <div class="aluno-mat">RA: 2021076543 · Unisul</div>
+            </div>
+            <div class="aluno-severity">
+              <div class="pend-pips"><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div><div class="pip"></div></div>
+              <span class="sev-count">3</span>
+            </div>
+          </div>
+
+          <div style="text-align:center; padding-top:8px;">
+            <button class="btn-outline" style="font-size:11px; width:100%; justify-content:center;">
+              Ver todos os alunos ↓
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!-- ── TABELA DETALHADA EXPANDIDA ── -->
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+    <!-- REUSABLE: UTable + UInput + UTabs -->
+    <div class="full-table-section" style="position:relative;">
+      <span class="comp-tag reuse" style="top:4px; right:8px; position:absolute;">[REUSE] UTable, UInput, UTabs</span>
+
+      <div class="table-header">
+        <div class="table-title">Detalhamento — Por Aluno</div>
+        <div class="table-controls">
+          <div class="search-box">🔍 <span class="search-placeholder">Buscar por nome ou matrícula...</span></div>
+          <select class="filter-btn">Filtrar por: Todos ▾</select>
+          <select class="filter-btn">Ordenar: Nº Pendências ▾</select>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <!-- REUSABLE: UTabs -->
+      <div class="tabs-bar">
+        <div class="tab-item active">Todos com Pendências (3.486)</div>
+        <div class="tab-item">Críticos — 3+ pend. (641)</div>
+        <div class="tab-item">Em Alerta — 2 pend. (1.204)</div>
+        <div class="tab-item">Com 1 pendência (1.641)</div>
+      </div>
+
+      <!-- Table -->
+      <!-- REUSABLE: UTable -->
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Aluno</th>
+            <th>Matrícula</th>
+            <th>Instituição</th>
+            <th>Pendências</th>
+            <th>Tipos de Bloqueio</th>
+            <th style="text-align:center;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:#bbb; font-size:11px;">1</td>
+            <td class="td-name">João Carlos Ferreira</td>
+            <td class="td-mat">2021034562</td>
+            <td style="font-size:11px; color:#666;">UAM</td>
+            <td>
+              <div class="td-pends">
+                <span class="pend-pill critical">5 pendências</span>
+                <div class="pend-pips">
+                  <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+                </div>
+              </div>
+            </td>
+            <td class="td-types">
+              <span class="type-tag">Financeiro</span>
+              <span class="type-tag">Contrato</span>
+              <span class="type-tag">Oferta</span>
+              <span class="type-tag">+2</span>
+            </td>
+            <td style="text-align:center;"><button class="expand-btn">Ver detalhes ↗</button></td>
+          </tr>
+          <tr>
+            <td style="color:#bbb; font-size:11px;">2</td>
+            <td class="td-name">Maria da Silva Santos</td>
+            <td class="td-mat">2020019871</td>
+            <td style="font-size:11px; color:#666;">UNA</td>
+            <td>
+              <div class="td-pends">
+                <span class="pend-pill critical">4 pendências</span>
+                <div class="pend-pips">
+                  <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div>
+                </div>
+              </div>
+            </td>
+            <td class="td-types">
+              <span class="type-tag">Financeiro</span>
+              <span class="type-tag">Acadêmico E2A2</span>
+              <span class="type-tag">+2</span>
+            </td>
+            <td style="text-align:center;"><button class="expand-btn">Ver detalhes ↗</button></td>
+          </tr>
+          <tr>
+            <td style="color:#bbb; font-size:11px;">3</td>
+            <td class="td-name">Pedro Oliveira Souza</td>
+            <td class="td-mat">2022008834</td>
+            <td style="font-size:11px; color:#666;">UNIBH</td>
+            <td>
+              <div class="td-pends">
+                <span class="pend-pill critical">4 pendências</span>
+                <div class="pend-pips">
+                  <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div>
+                </div>
+              </div>
+            </td>
+            <td class="td-types">
+              <span class="type-tag">Contrato</span>
+              <span class="type-tag">DP</span>
+              <span class="type-tag">+2</span>
+            </td>
+            <td style="text-align:center;"><button class="expand-btn">Ver detalhes ↗</button></td>
+          </tr>
+          <tr>
+            <td style="color:#bbb; font-size:11px; text-align:center;" colspan="7">
+              … mais 3.483 alunos · <button class="btn-outline" style="display:inline-flex; font-size:11px; padding:2px 8px;">Carregar mais</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- Annotation final -->
+    <div class="annotation">
+      <span class="ann-icon">📐</span>
+      <span><strong>Estrutura proposta:</strong> Hero Impact Card (novo) → Split: Tipos com barras visuais + Top Alunos Críticos (novos) → Tabela unificada com filtros por severidade e chips de tipo. Elimina a divisão em abas que esconde informação importante por padrão.</span>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

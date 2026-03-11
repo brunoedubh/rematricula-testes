@@ -498,7 +498,15 @@ OFFSET ${offset}
 - [ ] Guia de uso
 - [ ] Troubleshooting
 
-### 💎 Fase 8 - Melhorias Futuras (Backlog)
+### 📊 Fase 8 - Pendências de Alunos
+- [ ] Nova página inicial para Dashboard de Pendências (`/app`)
+- [ ] Refatoração do Menu Principal para possibilitar navegação
+- [ ] Deslocamento da tela atual do gerador de tokens/alunos para `/app/alunos`
+- [ ] Implementação da visão "Por Aluno" detalhando pendências (Nuxt UI)
+- [ ] Implementação da visão "Por Pendência" e alunos atrelados (Nuxt UI)
+- [ ] Dados mockados para demonstração inicial
+
+### 💎 Fase 9 - Melhorias Futuras (Backlog)
 - [ ] Migrar cache para Redis (multi-instância)
 - [ ] Dashboard com métricas de uso
 - [ ] Geração em batch (múltiplos alunos)

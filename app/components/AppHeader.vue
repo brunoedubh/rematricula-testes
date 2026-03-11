@@ -2,18 +2,9 @@
 const route = useRoute()
 const user = ref<any>(null)
 const loggingOut = ref(false)
+const isDashboardSidebarOpen = inject('dashboard:sidebar', ref(false))
 
-/*const items = computed(() => [{
-  label: 'Docs',
-  to: '/docs',
-  active: route.path.startsWith('/docs')
-}, {
-  label: 'Blog',
-  to: '/blog'
-}, {
-  label: 'Changelog',
-  to: '/changelog'
-}])*/
+
 
 onMounted(async () => {
   try {
@@ -48,10 +39,18 @@ async function handleLogout() {
 <template>
   <UHeader>
     <template #left>
+      <!-- Botão para abrir o Sidebar no mobile do UDashboardLayout -->
+      <UButton
+        color="neutral"
+        variant="ghost"
+        icon="i-lucide-menu"
+        class="lg:hidden mr-2"
+      />
+
       <NuxtLink to="/">
         <AppLogo class="w-auto h-6 shrink-0" />
       </NuxtLink>
-      <TemplateMenu />
+      <TemplateMenu class="hidden sm:flex" />
     </template>
 
     <template #right>
@@ -109,22 +108,20 @@ async function handleLogout() {
     </template>
 
     <template #body>
-      <!--<UNavigationMenu
-        :items="items"
-        orientation="vertical"
-        class="-mx-2.5"
-      />-->
+      <!-- Menu Navigation em body não é mais necessário pois o USlideover na esquerda resolve para todos os tamanhos, 
+           mas podemos manter aqui outras opções como Sign in para usuários deslogados -->
+      <div v-if="!user?.loggedIn">
+        <USeparator class="my-6" />
 
-      <USeparator class="my-6" />
-
-      <UButton
-        label="Sign in"
-        color="neutral"
-        variant="subtle"
-        to="/login"
-        block
-        class="mb-3"
-      />
+        <UButton
+          label="Sign in"
+          color="neutral"
+          variant="subtle"
+          to="/login"
+          block
+          class="mb-3"
+        />
+      </div>
     </template>
   </UHeader>
 </template>
