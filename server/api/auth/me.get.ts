@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     // Verificar sessão
     const sessionData = getUserSession(token)
 
-    if (!sessionData || !sessionData.isValid) {
+    if (!sessionData || !sessionData.isValid || !sessionData.user) {
       throw createError({
         statusCode: 401,
         message: 'Sessão inválida ou expirada'
@@ -32,16 +32,17 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { statusCode?: number; message?: string }
     // Não logar erros de autenticação esperados (token não encontrado)
     // Apenas logar erros inesperados
-    if (error.statusCode !== 401 && error.message !== 'Token de autenticação não encontrado') {
-      console.error('Auth check error:', error.message || error)
+    if (err.statusCode !== 401 && err.message !== 'Token de autenticação não encontrado') {
+      console.error('Auth check error:', err.message || error)
     }
 
     throw createError({
       statusCode: 401,
-      message: error.message || 'Não autenticado'
+      message: err.message || 'Não autenticado'
     })
   }
 })

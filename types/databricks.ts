@@ -23,6 +23,7 @@ export interface StudentSearchRequest {
   categoriaGrade?: string
   IND_CONTRATO_ASSINADO?: string
   IND_CALOURO?: 'S' | 'N'
+  IND_CONTRATO_LIBERADO?: 'S' | 'N'
   environment?: 'dev' | 'hml' | 'prod'
   bloqueado?: 'bloqueados' | 'desbloqueados' | 'todos'
 }
@@ -59,11 +60,11 @@ export interface DatabricksQueryRequest {
   warehouse_id: string
   catalog?: string
   schema?: string
-  parameters?: Record<string, any>
+  parameters?: Record<string, unknown>
 }
 
 export interface DatabricksQueryResult {
-  data_array?: any[][]
+  data_array?: unknown[][]
   columns?: Array<{
     name: string
     type: string
@@ -74,5 +75,5 @@ export interface DatabricksQueryResponse {
   statement_id: string
   state: 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled'
   result?: DatabricksQueryResult
-  error?: any
+  error?: unknown
 }

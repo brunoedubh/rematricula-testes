@@ -1,22 +1,26 @@
 <script setup lang="ts">
+interface TokenEnvStatus { exists: boolean; expiresAt?: number; minutesRemaining?: number }
+interface TokensStatus {
+  dev: TokenEnvStatus
+  hml: TokenEnvStatus
+  prod: TokenEnvStatus
+}
+
 const loading = ref(false)
-const tokensStatus = ref<{
-  dev: { exists: boolean; expiresAt?: number; minutesRemaining?: number }
-  hml: { exists: boolean; expiresAt?: number; minutesRemaining?: number }
-  prod: { exists: boolean; expiresAt?: number; minutesRemaining?: number }
-} | null>(null)
+const tokensStatus = ref<TokensStatus | null>(null)
 
 // Carregar status dos tokens
 async function loadTokensStatus() {
   loading.value = true
   try {
-    const response = await $fetch('/api/tokens/status') as any
+    const response = await $fetch('/api/tokens/status') as { success?: boolean; tokens?: TokensStatus }
     if (response.success && response.tokens) {
       tokensStatus.value = response.tokens
     }
-  } catch (error: any) {
+  } catch (error) {
     // Silenciar erros de autenticação (401) - componente só funciona em rotas autenticadas
-    if (error?.statusCode !== 401) {
+    const err = error as { statusCode?: number }
+    if (err?.statusCode !== 401) {
       console.error('Failed to load tokens status:', error)
     }
   } finally {

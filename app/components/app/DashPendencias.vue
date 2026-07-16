@@ -11,13 +11,13 @@ const tabelaRef = ref<HTMLElement | null>(null)
 
 // ── Data fetching ──────────────────────────────────────────────────────────
 const { data: resumoRaw, pending: loadingResumo, refresh: refreshResumo } =
-  useFetch<any>('/api/pendencias/resumo')
+  useFetch<{ success?: boolean; data?: ResumoPendencias; error?: string }>('/api/pendencias/resumo')
 
 const { data: tiposRaw, pending: loadingTipos, refresh: refreshTipos } =
-  useFetch<any>('/api/pendencias/por-tipo')
+  useFetch<{ success?: boolean; data?: TipoPendencia[]; error?: string }>('/api/pendencias/por-tipo')
 
 const { data: alunosRaw, pending: loadingAlunos, refresh: refreshAlunos } =
-  useFetch<any>('/api/pendencias/alunos')
+  useFetch<{ success?: boolean; data?: AlunoComPendencias[]; error?: string }>('/api/pendencias/alunos')
 
 // ── Computed data ──────────────────────────────────────────────────────────
 const resumo = computed<ResumoPendencias>(() =>
@@ -305,7 +305,7 @@ watch(searchAluno, () => { activeFilter.value = 0 })
                   {{ pctResolvido }}%
                 </span>
                 <span class="text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight mt-1">
-                  Aptos<br/>sem bloqueio
+                  Aptos<br>sem bloqueio
                 </span>
               </div>
             </div>

@@ -10,7 +10,7 @@ useSeoMeta({
 // Redirecionar para login se não estiver autenticado, ou para /app se já estiver
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me') as any
+    const response = await $fetch('/api/auth/me') as { user?: { email?: string } }
     if (response && response.user && response.user.email) {
       await navigateTo('/app')
     }

@@ -16,7 +16,8 @@ const searchForm = reactive<StudentSearchRequest>({
   course: '',
   status: '',
   IND_CONTRATO_ASSINADO: '',
-  IND_CALOURO: 'N'
+  IND_CALOURO: 'N',
+  IND_CONTRATO_LIBERADO: 'S'
 })
 
 const searching = ref(false)
@@ -39,7 +40,7 @@ async function performSearch() {
     const response = await $fetch('/api/students/search', {
       method: 'POST',
       body: searchForm
-    }) as any
+    }) as { success: boolean; students: Aluno[]; error?: string }
 
     if (response.success) {
       searchResults.value = response.students
@@ -47,9 +48,10 @@ async function performSearch() {
     } else {
       searchError.value = response.error || 'Erro na busca de alunos'
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Search error:', error)
-    searchError.value = error.data?.message || 'Erro interno do servidor'
+    const err = error as { data?: { message?: string } }
+    searchError.value = err.data?.message || 'Erro interno do servidor'
   } finally {
     searching.value = false
   }
@@ -71,6 +73,7 @@ function clearSearch() {
   searchForm.categoriaGrade = ''
   searchForm.IND_CONTRATO_ASSINADO = ''
   searchForm.IND_CALOURO = 'N'
+  searchForm.IND_CONTRATO_LIBERADO = 'S'
   searchResults.value = []
   searchError.value = null
   hasSearched.value = false
@@ -127,7 +130,7 @@ async function generateAccessUrl(
         studentCode: student.COD_ALUNO.toString(),
         password
       }
-    }) as any
+    }) as { success?: boolean; requiresPassword?: boolean; url?: string; from_cache?: boolean; error?: string }
 
     // Verificar se precisa de senha
     if (!response.success && response.requiresPassword && !password) {
@@ -171,12 +174,12 @@ async function generateAccessUrl(
         color: 'error'
       })
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating URL:', error)
     // Erro de rede ou outro erro inesperado
     toast.add({
       title: 'Erro ao gerar acesso',
-      description: error.message || 'Erro de conexão com o servidor',
+      description: error instanceof Error ? error.message : 'Erro de conexão com o servidor',
       icon: 'i-heroicons-exclamation-triangle',
       color: 'error'
     })
@@ -288,10 +291,10 @@ function handleStudentUnlocked() {
               <span class="text-sm text-gray-600">Frequencia de atualização</span>
               <span class="text-sm text-gray-900">Diário | D-1 com SIAF</span>
             </div>
-            <div class="flex items-center justify-between">
+            <!-- <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Data atualização</span>
               <span class="text-sm text-gray-900">22/01/2026</span>
-            </div>
+            </div> -->
           </div>
         </UCard>
 

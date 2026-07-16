@@ -12,22 +12,6 @@ const emit = defineEmits<{
 
 const loadingEnvironment = ref<'dev' | 'hml' | 'prod' | null>(null)
 
-function getStatusColor(status: string): 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral' {
-  switch (status?.toLowerCase()) {
-    case 'ativo':
-    case 'matriculado':
-      return 'success'
-    case 'inativo':
-    case 'cancelado':
-      return 'error'
-    case 'suspenso':
-    case 'trancado':
-      return 'warning'
-    default:
-      return 'neutral'
-  }
-}
-
 function handleViewDetails() {
   console.log('[StudentCard] handleViewDetails called, emitting view-details')
   emit('view-details', props.student)
@@ -121,7 +105,7 @@ watch(() => props.student, () => {
                 Contrato Não liberado
               </UBadge>
             </div>
-            <div></div>            
+            <div/>            
           </template>    
         </div>
       </div>

@@ -1,25 +1,25 @@
 <script setup lang="ts">
-const user = ref<any>(null)
-const isCollapsed = ref(false)
+const user = ref<{ loggedIn?: boolean } | null>(null)
+const isCollapsed = ref(true)
 
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me') as any
+    const response = await $fetch('/api/auth/me') as { user?: { loggedIn?: boolean } }
     if (response && response.user) {
       user.value = response.user
     }
-  } catch (error) {
+  } catch {
     console.log('User not authenticated')
   }
 })
 
 const navItems = ref([
   [
-    {
+    /*{
       label: 'Pendências',
       to: '/app',
       icon: 'i-lucide-alert-circle'
-    },
+    },*/
     {
       label: 'Alunos e Tokens',
       to: '/app/alunos',
@@ -44,7 +44,7 @@ const navItems = ref([
 
         <!-- Botão de Expandir / Recolher fica dentro da barra -->
         <UButton
-          color="gray"
+          color="secondary"
           variant="ghost"
           :icon="isCollapsed ? 'i-lucide-menu' : 'i-lucide-chevron-left'"
           class="shrink-0"

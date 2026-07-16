@@ -34,7 +34,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   console.log('Running auth check')
   try {
-    const response = await $fetch('/api/auth/me') as any
+    const response = await $fetch('/api/auth/me') as { user?: unknown; success?: boolean }
     console.log('Auth response:', response)
 
     if (!response || !response.user || !response.success) {

@@ -35,9 +35,10 @@ export const useAuth = () => {
         error.value = response.error || 'Erro ao fazer login'
         return false
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err)
-      error.value = err.data?.error || 'Erro de conexão. Tente novamente.'
+      const fetchErr = err as { data?: { error?: string } }
+      error.value = fetchErr.data?.error || 'Erro de conexï¿½o. Tente novamente.'
       return false
     } finally {
       loading.value = false
@@ -45,7 +46,7 @@ export const useAuth = () => {
   }
 
   /**
-   * Fazer logout e limpar sessão
+   * Fazer logout e limpar sessï¿½o
    */
   const logout = async (): Promise<void> => {
     loading.value = true
@@ -68,7 +69,7 @@ export const useAuth = () => {
   }
 
   /**
-   * Verificar se o usuário está autenticado
+   * Verificar se o usuï¿½rio estï¿½ autenticado
    */
   const checkAuth = async (): Promise<boolean> => {
     if (user.value?.loggedIn) {
@@ -76,7 +77,7 @@ export const useAuth = () => {
     }
 
     try {
-      const response = await $fetch('/api/auth/me') as any
+      const response = await $fetch('/api/auth/me') as { user?: { email?: string; created_at?: number; expires_at?: number } }
 
       if (response && response.user && response.user.email) {
         user.value = {
@@ -96,7 +97,7 @@ export const useAuth = () => {
   }
 
   /**
-   * Verificar se a sessão ainda é válida
+   * Verificar se a sessï¿½o ainda ï¿½ vï¿½lida
    */
   const isSessionValid = computed(() => {
     if (!user.value?.expires_at) return false
@@ -104,7 +105,7 @@ export const useAuth = () => {
   })
 
   /**
-   * Tempo restante da sessão em minutos
+   * Tempo restante da sessï¿½o em minutos
    */
   const sessionTimeRemaining = computed(() => {
     if (!user.value?.expires_at) return 0

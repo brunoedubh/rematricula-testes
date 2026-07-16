@@ -1,4 +1,4 @@
-import type { StudentSearchRequest, Aluno, DatabricksConfig } from '../../types'
+import type { StudentSearchRequest, Aluno } from '../../types'
 import { getDatabricksConfig, searchStudentsInDatabricks } from '../utils/databricks'
 
 /**

@@ -129,12 +129,12 @@ export default defineEventHandler(async (event: H3Event): Promise<GenerateUrlRes
       environment: body.environment
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Generate URL error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro ao gerar URL'
+      error: (error instanceof Error ? error.message : 'Erro ao gerar URL')
     }
   }
 })

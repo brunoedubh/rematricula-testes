@@ -1,7 +1,13 @@
 import jwt from 'jsonwebtoken'
 import crypto from 'node:crypto'
+import type { H3Event } from 'h3'
 import type { SessionUser, SessionData } from '../../types'
 import { decrypt } from '../utils/encryption'
+
+interface SessionTokenPayload extends jwt.JwtPayload {
+  sessionId?: string
+  email?: string
+}
 
 const sessionStore = new Map<string, SessionUser>()
 
@@ -34,10 +40,10 @@ export function getUserSession(token: string): SessionData | null {
     cleanupIfNeeded()
 
     const config = useRuntimeConfig()
-    const decoded = jwt.verify(token, config.sessionSecret) as any
+    const decoded = jwt.verify(token, config.sessionSecret) as SessionTokenPayload
 
     if (!decoded.sessionId) {
-      return { user: null as any, isValid: false }
+      return { user: null, isValid: false }
     }
 
     const sessionUser = sessionStore.get(decoded.sessionId)
@@ -49,8 +55,8 @@ export function getUserSession(token: string): SessionData | null {
       if (decoded.exp && decoded.exp * 1000 > Date.now()) {
         // Recriar sessão a partir do JWT
         const reconstructedUser: SessionUser = {
-          email: decoded.email,
-          created_at: decoded.iat * 1000,
+          email: decoded.email ?? '',
+          created_at: (decoded.iat ?? 0) * 1000,
           expires_at: decoded.exp * 1000,
           encrypted_password: '' // Não podemos recuperar a senha, mas JWT é válido
         }
@@ -64,33 +70,33 @@ export function getUserSession(token: string): SessionData | null {
         }
       }
 
-      return { user: null as any, isValid: false }
+      return { user: null, isValid: false }
     }
 
     // Verificar se a sessão expirou
     if (Date.now() > sessionUser.expires_at) {
       sessionStore.delete(decoded.sessionId)
-      return { user: null as any, isValid: false }
+      return { user: null, isValid: false }
     }
 
     return {
       user: sessionUser,
       isValid: true
     }
-  } catch (error) {
-    return { user: null as any, isValid: false }
+  } catch {
+    return { user: null, isValid: false }
   }
 }
 
 export function destroySession(token: string): void {
   try {
     const config = useRuntimeConfig()
-    const decoded = jwt.verify(token, config.sessionSecret) as any
+    const decoded = jwt.verify(token, config.sessionSecret) as SessionTokenPayload
 
     if (decoded.sessionId) {
       sessionStore.delete(decoded.sessionId)
     }
-  } catch (error) {
+  } catch {
     // Token inválido, não precisa fazer nada
   }
 }
@@ -116,11 +122,11 @@ export function getUserCredentials(sessionUser: SessionUser): { email: string, p
       password: decryptedPassword
     }
   } catch (error) {
-    throw new Error('Failed to decrypt user credentials')
+    throw new Error('Failed to decrypt user credentials', { cause: error })
   }
 }
 
-export async function getSessionFromEvent(event: any): Promise<SessionUser | null> {
+export async function getSessionFromEvent(event: H3Event): Promise<SessionUser | null> {
   try {
     const token = getCookie(event, 'auth-token')
     if (!token) {
@@ -133,7 +139,7 @@ export async function getSessionFromEvent(event: any): Promise<SessionUser | nul
     }
 
     return sessionData.user
-  } catch (error) {
+  } catch {
     return null
   }
 }

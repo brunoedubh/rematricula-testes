@@ -1,7 +1,4 @@
 <script setup lang="ts">
-const toast = useToast()
-const email = ref('')
-const loading = ref(false)
 </script>
 
 <template>

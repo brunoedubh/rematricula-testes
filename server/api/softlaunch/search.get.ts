@@ -1,7 +1,7 @@
 import { getDb } from '../../utils/db_soft'
 
 export default defineEventHandler(async () => {
-  const db = getDb()
+  getDb()
 /*
   try {
     const result = await db.query(`

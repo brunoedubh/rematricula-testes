@@ -55,17 +55,24 @@ export default defineEventHandler(async (event): Promise<DatabricksAuthResponse>
       expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Databricks auth error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro interno do servidor'
+      error: (error instanceof Error ? error.message : 'Erro interno do servidor')
     }
   }
 })
 
-function getDatabricksConfig(environment: string, config: any) {
+function getDatabricksConfig(environment: string, config: ReturnType<typeof useRuntimeConfig> & {
+  databricksWorkspaceDev?: string
+  databricksClientIdDev?: string
+  databricksClientSecretDev?: string
+  databricksWorkspaceProd?: string
+  databricksClientIdProd?: string
+  databricksClientSecretProd?: string
+}) {
   switch (environment.toLowerCase()) {
     case 'dev':
       return {
@@ -85,9 +92,9 @@ function getDatabricksConfig(environment: string, config: any) {
 }
 
 async function authenticateWithDatabricks(
-  databricksConfig: any,
-  encryptedPassword: string,
-  encryptionKey: string
+  databricksConfig: { workspace?: string; clientId?: string; clientSecret?: string },
+  _encryptedPassword: string,
+  _encryptionKey: string
 ): Promise<string | null> {
   try {
     // Para o Databricks, podemos usar OAuth2 client credentials flow

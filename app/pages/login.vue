@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { LoginRequest } from '../../types'
 
 definePageMeta({
   layout: 'auth'
@@ -75,9 +74,10 @@ async function handleLogin(payload: FormSubmitEvent<Schema>) {
       error.value = response.error || 'Erro ao fazer login'
       toast.add({ title: 'Erro', description: error.value })
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Login error:', err)
-    error.value = err.data?.error || 'Erro de conexão. Tente novamente.'
+    const fetchErr = err as { data?: { error?: string } }
+    error.value = fetchErr.data?.error || 'Erro de conexão. Tente novamente.'
     toast.add({ title: 'Erro', description: error.value })
   } finally {    
     loading.value = false
@@ -87,7 +87,7 @@ async function handleLogin(payload: FormSubmitEvent<Schema>) {
 // Redirecionar se já estiver logado
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me') as any
+    const response = await $fetch('/api/auth/me') as { user?: { email?: string } }
     if (response && response.user && response.user.email) {
       await navigateTo('/app')
     }

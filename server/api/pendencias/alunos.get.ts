@@ -10,11 +10,11 @@ export default defineEventHandler(async (event) => {
   try {
     const data = await getAlunosComPendencias(200)
     return { success: true, data, total: data.length }
-  } catch (error: any) {
+  } catch (error) {
     console.error('[pendencias/alunos] Error:', error)
     return {
       success: false,
-      error: error.message || 'Erro ao buscar alunos com pendências',
+      error: (error instanceof Error ? error.message : 'Erro ao buscar alunos com pendências'),
       data: [],
       total: 0
     }

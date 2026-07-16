@@ -55,12 +55,12 @@ export default defineEventHandler(async (event): Promise<BlockStatusResponse> =>
       dataFimBloqueio: blockStatus.dataFimBloqueio
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Block status error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro ao verificar status de bloqueio'
+      error: (error instanceof Error ? error.message : 'Erro ao verificar status de bloqueio')
     }
   }
 })

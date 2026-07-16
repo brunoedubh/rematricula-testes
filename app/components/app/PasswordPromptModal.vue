@@ -56,8 +56,8 @@ function handleConfirm() {
 
 <template>
   <UModal
-    v-model:open="isOpen"
     v-if="student && environment"
+    v-model:open="isOpen"
   >
     <template #content>
       <UCard>
@@ -124,8 +124,8 @@ function handleConfirm() {
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Digite sua senha"
                 class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                @keyup.enter="handleConfirm"
                 autofocus
+                @keyup.enter="handleConfirm"
               >
               <button
                 type="button"

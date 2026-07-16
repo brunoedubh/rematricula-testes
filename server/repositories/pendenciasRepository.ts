@@ -30,10 +30,10 @@ export async function getResumoPendencias(): Promise<ResumoPendencias> {
     return { total_aptos: 0, total_com_pendencias: 0, total_pendencias_ativas: 0, percentual_pendentes: 0 }
   }
 
-  const row = data.result.data_array[0]
-  const total_aptos = parseInt(row[0]) || 0
-  const total_com_pendencias = parseInt(row[1]) || 0
-  const total_pendencias_ativas = parseInt(row[2]) || 0
+  const row = data.result.data_array[0] as string[]
+  const total_aptos = parseInt(row[0] ?? '') || 0
+  const total_com_pendencias = parseInt(row[1] ?? '') || 0
+  const total_pendencias_ativas = parseInt(row[2] ?? '') || 0
   const percentual_pendentes = total_aptos > 0
     ? Math.round((total_com_pendencias / total_aptos) * 1000) / 10
     : 0
@@ -71,14 +71,14 @@ export async function getPendenciasPorTipo(): Promise<TipoPendencia[]> {
 
   if (!data?.result?.data_array) return []
 
-  return data.result.data_array.map((row: any[]) => ({
-    id: parseInt(row[0]),
-    slug: row[1],
-    nom_pendencia: row[2],
+  return (data.result.data_array as string[][]).map(row => ({
+    id: parseInt(row[0] ?? ''),
+    slug: row[1] ?? '',
+    nom_pendencia: row[2] ?? '',
     dsc_pendencia: row[3] || null,
-    tabela: row[4],
-    ind_prerematricula: row[5] === 'true' || row[5] === true,
-    total_afetados: parseInt(row[6]) || 0
+    tabela: row[4] ?? '',
+    ind_prerematricula: row[5] === 'true',
+    total_afetados: parseInt(row[6] ?? '') || 0
   }))
 }
 
@@ -110,11 +110,11 @@ export async function getAlunosComPendencias(limit = 200): Promise<AlunoComPende
 
   if (!data?.result?.data_array) return []
 
-  return data.result.data_array.map((row: any[]) => ({
-    cod_aluno: parseInt(row[0]),
-    cod_pessoa: parseInt(row[1]),
-    nom_aluno: row[2],
-    num_matricula: row[3],
-    total_pendencias: parseInt(row[4]) || 0
+  return (data.result.data_array as string[][]).map(row => ({
+    cod_aluno: parseInt(row[0] ?? ''),
+    cod_pessoa: parseInt(row[1] ?? ''),
+    nom_aluno: row[2] ?? '',
+    num_matricula: row[3] ?? '',
+    total_pendencias: parseInt(row[4] ?? '') || 0
   }))
 }

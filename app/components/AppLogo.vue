@@ -10,7 +10,7 @@ const iconUrl = '/images/logo.png' // Ajuste o caminho conforme sua estrutura de
       :src="iconUrl" 
       alt="Anima Icon" 
       class="h-6 w-6 object-contain"
-    />
+    >
     
     <!-- Texto "Anima" -->
     <span class="text-xl font-bold tracking-tight leading-none">

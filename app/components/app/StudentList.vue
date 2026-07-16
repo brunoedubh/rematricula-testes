@@ -2,7 +2,7 @@
 import type { Aluno } from '../../../types'
 import StudentCard from './StudentCard.vue'
 
-const props = defineProps<{
+defineProps<{
   students: Aluno[]
   hasSearched: boolean
   searching: boolean

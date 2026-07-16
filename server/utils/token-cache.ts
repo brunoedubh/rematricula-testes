@@ -113,7 +113,7 @@ export function clearTokenCache(
   const userCache = tokenCache.get(email)
 
   if (userCache && userCache[environment]) {
-    delete userCache[environment]
+    Reflect.deleteProperty(userCache, environment)
     tokenCache.set(email, userCache)
     console.log(`[TOKEN CACHE] Token ${environment} removido para ${email}`)
   }

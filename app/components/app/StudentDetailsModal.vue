@@ -59,7 +59,7 @@ async function fetchBlockStatus() {
         dataFimBloqueio: response.dataFimBloqueio
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao buscar status de bloqueio:', error)
     // Em caso de erro, assumir bloqueado por segurança
     blockStatus.value = { bloqueado: true }
@@ -122,11 +122,11 @@ async function handleLiberarAluno() {
         color: 'error'
       })
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao liberar aluno:', error)
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao liberar aluno',
+      description: error instanceof Error ? error.message : 'Erro ao liberar aluno',
       color: 'error'
     })
   } finally {
@@ -166,11 +166,11 @@ async function handleEncerrarLiberacao() {
         color: 'error'
       })
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao encerrar liberação:', error)
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao encerrar liberação',
+      description: error instanceof Error ? error.message : 'Erro ao encerrar liberação',
       color: 'error'
     })
   } finally {
@@ -248,9 +248,10 @@ const processCompletionPercentage = computed(() => {
 </script>
 
 <template>
-  <UModal fullscreen
+  <UModal
+v-if="student"
     v-model:open="isOpen"
-    v-if="student"
+    fullscreen
   >
     <template #content>
     <UCard>
@@ -413,7 +414,8 @@ const processCompletionPercentage = computed(() => {
 
           <div v-else-if="blockStatus" class="space-y-3">
             <!-- Status Badge Compacto -->
-            <div class="flex items-center justify-between p-3 rounded-lg border"
+            <div
+class="flex items-center justify-between p-3 rounded-lg border"
               :class="blockStatus.bloqueado
                 ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900'
                 : 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900'">
@@ -464,8 +466,8 @@ const processCompletionPercentage = computed(() => {
               <UButton
                 color="primary"
                 size="sm"
-                @click="handleAccessEnvironment('dev')"
                 class="flex-1 sm:flex-none"
+                @click="handleAccessEnvironment('dev')"
               >
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
                 Acessar DEV
@@ -473,8 +475,8 @@ const processCompletionPercentage = computed(() => {
               <UButton
                 color="primary"
                 size="sm"
-                @click="handleAccessEnvironment('hml')"
                 class="flex-1 sm:flex-none"
+                @click="handleAccessEnvironment('hml')"
               >
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
                 Acessar HML
@@ -482,8 +484,8 @@ const processCompletionPercentage = computed(() => {
               <UButton
                 color="warning"
                 size="sm"
-                @click="handleAccessEnvironment('prod')"
                 class="flex-1 sm:flex-none"
+                @click="handleAccessEnvironment('prod')"
               >
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="mr-1" />
                 Acessar PROD
@@ -496,8 +498,7 @@ const processCompletionPercentage = computed(() => {
       
       <template #footer>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div class="text-xs text-gray-500 dark:text-gray-400">
-          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400"/>
           <div class="flex gap-2">
             <UButton
               color="neutral"

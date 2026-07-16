@@ -10,11 +10,11 @@ export default defineEventHandler(async (event) => {
   try {
     const data = await getPendenciasPorTipo()
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error) {
     console.error('[pendencias/por-tipo] Error:', error)
     return {
       success: false,
-      error: error.message || 'Erro ao buscar pendências por tipo',
+      error: (error instanceof Error ? error.message : 'Erro ao buscar pendências por tipo'),
       data: []
     }
   }

@@ -10,11 +10,11 @@ export default defineEventHandler(async (event) => {
   try {
     const data = await getResumoPendencias()
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error) {
     console.error('[pendencias/resumo] Error:', error)
     return {
       success: false,
-      error: error.message || 'Erro ao buscar resumo de pendências',
+      error: (error instanceof Error ? error.message : 'Erro ao buscar resumo de pendências'),
       data: { total_aptos: 0, total_com_pendencias: 0, total_pendencias_ativas: 0, percentual_pendentes: 0 }
     }
   }

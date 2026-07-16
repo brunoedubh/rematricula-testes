@@ -24,6 +24,6 @@ export interface LoginResponse {
 }
 
 export interface SessionData {
-  user: SessionUser
+  user: SessionUser | null
   isValid: boolean
 }

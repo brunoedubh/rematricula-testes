@@ -1,4 +1,4 @@
-import type { StudentSearchRequest, Aluno, DatabricksConfig, DatabricksQueryResult } from '../../types'
+import type { StudentSearchRequest, Aluno, DatabricksConfig, DatabricksQueryResponse } from '../../types'
 
 /**
  * Cliente para integração com Databricks SQL
@@ -124,6 +124,13 @@ export function buildStudentSearchQuery(searchParams: StudentSearchRequest): str
     }
   }
 
+  if (searchParams.IND_CONTRATO_LIBERADO) {
+    const indcontliberado = searchParams.IND_CONTRATO_LIBERADO
+    if (indcontliberado === 'S' || indcontliberado === 'N') {
+      conditions.push(`IND_CONTRATO_LIBERADO = '${indcontliberado}'`)
+    }
+  }
+
   if (searchParams.IND_CALOURO) {
     const indcalouro = searchParams.IND_CALOURO
     if (indcalouro === 'S' || indcalouro === 'N') {
@@ -180,7 +187,7 @@ export async function waitForQueryCompletion(
   token: string,
   statementId: string,
   maxWaitTime = 120000 // Aumentado para 120 segundos (2 minutos)
-): Promise<any> {
+): Promise<DatabricksQueryResponse> {
   const startTime = Date.now()
   let attemptCount = 0
 
@@ -232,7 +239,7 @@ export async function waitForQueryCompletion(
 /**
  * Faz o parse dos resultados da query do Databricks para objetos Aluno
  */
-export function parseStudentResults(data: any): Aluno[] {
+export function parseStudentResults(data: DatabricksQueryResponse): Aluno[] {
 
   try {
     if (!data?.result?.data_array) {
@@ -240,7 +247,7 @@ export function parseStudentResults(data: any): Aluno[] {
       return []
     }    
 
-    return data.result.data_array.map((row: any[]) => ({
+    return data.result.data_array.map((row: unknown[]) => ({
       COD_ALUNO: row[0],
       NUM_MATRICULA: row[1],
       DSC_MARCA: row[2],
@@ -271,7 +278,7 @@ export function parseStudentResults(data: any): Aluno[] {
       IND_CONTRATO_LIBERADO: row[27],
       IND_CONTRATO_ASSINADO: row[28],
       NUM_CPF: row[29]
-    }))
+    }) as Aluno)
   } catch (error) {
     console.error('Error parsing student results:', error)
     return []
@@ -286,7 +293,7 @@ export async function executeQuery(
   token: string,
   query: string,
   parameters?: Record<string, unknown>
-): Promise<any> {
+): Promise<DatabricksQueryResponse> {
   try {
     console.log('[DATABRICKS] Iniciando execução da query...')
     const startTime = Date.now()
@@ -398,8 +405,8 @@ export async function getDatabricksToken(config: DatabricksConfig): Promise<stri
 /**
  * Constrói os parâmetros da query SQL
  */
-export function buildQueryParameters(searchParams: StudentSearchRequest): Record<string, any> {
-  const params: Record<string, any> = {}
+export function buildQueryParameters(searchParams: StudentSearchRequest): Record<string, unknown> {
+  const params: Record<string, unknown> = {}
 
   if (searchParams.studentCode) {
     params.studentCode = searchParams.studentCode
@@ -441,7 +448,7 @@ export function buildQueryParameters(searchParams: StudentSearchRequest): Record
  * Obtém a configuração do Databricks baseada nas variáveis de ambiente
  * Função centralizada usada por todos os endpoints
  */
-export function getDatabricksConfig(config: any): DatabricksConfig {
+export function getDatabricksConfig(config: ReturnType<typeof useRuntimeConfig>): DatabricksConfig {
   return {
     host: config.databricksHost,
     token: config.databricksToken,

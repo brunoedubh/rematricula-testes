@@ -1,18 +1,14 @@
 <script setup lang="ts">
-const route = useRoute()
-const user = ref<any>(null)
+const user = ref<{ loggedIn?: boolean; email?: string } | null>(null)
 const loggingOut = ref(false)
-const isDashboardSidebarOpen = inject('dashboard:sidebar', ref(false))
-
-
 
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me') as any
+    const response = await $fetch('/api/auth/me') as { user?: { loggedIn?: boolean; email?: string } }
     if (response && response.user) {
       user.value = response.user
     }
-  } catch (error) {
+  } catch {
     // Não redirecionar em páginas públicas
     // O middleware já cuida do redirecionamento para rotas protegidas (/app/*)
     console.log('User not authenticated')
@@ -95,8 +91,8 @@ async function handleLogout() {
                   variant="ghost"
                   color="neutral"
                   class="w-full justify-start mt-1"
-                  @click="handleLogout"
                   :loading="loggingOut"
+                  @click="handleLogout"
                 >
                   <UIcon name="i-heroicons-arrow-right-on-rectangle" class="mr-2 h-4 w-4" />
                   Sair

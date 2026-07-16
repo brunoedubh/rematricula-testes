@@ -27,7 +27,7 @@ export function buildAccessUrl(
 /**
  * Obter URL base do ambiente
  */
-function getBaseUrl(environment: 'dev' | 'hml' | 'prod', config: any): string {
+function getBaseUrl(environment: 'dev' | 'hml' | 'prod', config: ReturnType<typeof useRuntimeConfig>): string {
   switch (environment) {
     case 'dev':
       return config.urlBaseDev || 'https://cloudapp-dev.animaeducacao.com.br/rematricula'

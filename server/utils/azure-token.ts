@@ -3,7 +3,7 @@
  * Suporta geração para dev, hml e prod
  */
 
-import { getTokenCache, setTokenCache, isTokenValid } from './token-cache'
+import { getTokenCache, setTokenCache } from './token-cache'
 
 interface AzureTokenResponse {
   access_token: string
@@ -72,13 +72,14 @@ export async function getOrGenerateToken(
       from_cache: false,
       minutes_remaining: Math.floor(tokenData.expires_in / 60)
     }
-  } catch (error: any) {
-    console.error(`[AZURE TOKEN] Erro ao gerar token para ${email} em ${environment}:`, error.message)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[AZURE TOKEN] Erro ao gerar token para ${email} em ${environment}:`, message)
 
     return {
       success: false,
       from_cache: false,
-      error: error.message || 'Erro ao gerar token'
+      error: message || 'Erro ao gerar token'
     }
   }
 }
@@ -140,7 +141,7 @@ async function generateAzureToken(
 /**
  * Obter configuração do Azure baseada no ambiente
  */
-function getAzureConfig(environment: 'dev' | 'hml' | 'prod', config: any) {
+function getAzureConfig(environment: 'dev' | 'hml' | 'prod', config: ReturnType<typeof useRuntimeConfig>) {
   switch (environment) {
     case 'dev':
     case 'hml':
@@ -211,13 +212,14 @@ export async function refreshAzureToken(
       from_cache: false,
       minutes_remaining: Math.floor(data.expires_in / 60)
     }
-  } catch (error: any) {
-    console.error(`[AZURE TOKEN] Erro ao renovar token:`, error.message)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[AZURE TOKEN] Erro ao renovar token:`, message)
 
     return {
       success: false,
       from_cache: false,
-      error: error.message || 'Erro ao renovar token'
+      error: message || 'Erro ao renovar token'
     }
   }
 }

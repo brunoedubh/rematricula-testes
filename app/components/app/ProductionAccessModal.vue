@@ -47,8 +47,8 @@ function handleConfirm() {
 
 <template>
   <UModal
-    v-model:open="isOpen"
     v-if="student"
+    v-model:open="isOpen"
   >
     <template #content>
     <UCard>

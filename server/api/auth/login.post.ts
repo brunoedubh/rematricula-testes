@@ -60,12 +60,12 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
       }
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro interno do servidor'
+      error: (error instanceof Error ? error.message : 'Erro interno do servidor')
     }
   }
 })

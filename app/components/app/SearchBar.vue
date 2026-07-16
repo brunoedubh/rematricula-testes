@@ -2,7 +2,7 @@
 import type { StudentSearchRequest } from '../../../types'
 import type { SelectItem } from '@nuxt/ui'
 
-const props = defineProps<{
+defineProps<{
   searching: boolean
 }>()
 
@@ -49,8 +49,13 @@ const gradeOptions = ref<SelectItem[]>([
 ])
 
 const contratoAssOptions = ref<SelectItem[]>([
-  { label: 'Aceito', value: 'S' },
-  { label: 'Não aceito', value: 'N' }
+  { label: 'Contrato Aceito', value: 'S' },
+  { label: 'Contrato Não aceito', value: 'N' }
+])
+
+const contratoLibOptions = ref<SelectItem[]>([
+  { label: 'Contrato Liberado', value: 'S' },
+  { label: 'Contrato não liberado', value: 'N' }
 ])
 
 const TipoAlunoOptions = ref<SelectItem[]>([
@@ -142,14 +147,19 @@ function handleClear() {
           placeholder="Persona"
           clearable
         />
-
+        <USelect
+          v-model="searchForm.IND_CONTRATO_LIBERADO"
+          :items="contratoLibOptions"
+          size="lg"
+          placeholder="Contrato Liberado"
+        />
         <USelect
           v-model="searchForm.IND_CONTRATO_ASSINADO"
           :items="contratoAssOptions"
           size="lg"
           placeholder="Contrato"
           clearable
-        />
+        />        
         <USelect
           v-model="searchForm.IND_CALOURO"
           :items="TipoAlunoOptions"
@@ -161,20 +171,20 @@ function handleClear() {
 
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
         <UButton
-          @click="handleSearch"
           :loading="searching"
           size="lg"
           color="primary"
+          @click="handleSearch"
         >
           <UIcon name="i-heroicons-magnifying-glass" class="mr-2 h-4 w-4" />
           Buscar
         </UButton>
 
         <UButton
-          @click="handleClear"
           variant="outline"
           size="lg"
           color="neutral"
+          @click="handleClear"
         >
           <UIcon name="i-heroicons-x-mark" class="mr-2 h-4 w-4" />
           Limpar

@@ -107,7 +107,7 @@ export async function checkMultipleStudentsBlockStatus(
 
   try {
     // Criar uma lista de valores para a query
-    const values: any[] = []
+    const values: unknown[] = []
     const conditions: string[] = []
 
     students.forEach((student, index) => {
@@ -145,10 +145,10 @@ export async function checkMultipleStudentsBlockStatus(
 
     // Criar mapa com as LIBERAÇÕES encontradas (alunos com permissão ativa)
     const unlockedStudents = new Map<string, string>()
-    result.rows.forEach((row: any) => {
+    result.rows.forEach((row: Record<string, string>) => {
       const key = `${row.codigocurso}-${row.identificadorpersona}-${row.codigocampus}-${row.codigoperiodoletivo}`
       if (!unlockedStudents.has(key)) {
-        unlockedStudents.set(key, row.datafim)
+        unlockedStudents.set(key, row.datafim ?? '')
       }
     })
 

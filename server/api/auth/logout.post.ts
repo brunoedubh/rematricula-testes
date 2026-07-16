@@ -33,12 +33,12 @@ export default defineEventHandler(async (event) => {
       message: 'Logout realizado com sucesso'
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Logout error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro ao fazer logout'
+      error: (error instanceof Error ? error.message : 'Erro ao fazer logout')
     }
   }
 })

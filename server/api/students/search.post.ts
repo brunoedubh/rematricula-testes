@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
     const body = await readBody(event) as StudentSearchRequest
 
     // Validação básica
-    if (!body.searchTerm && !body.studentCode && !body.studentRA && !body.course && !body.marca && !body.persona && !body.categoriaGrade && !body.IND_CONTRATO_ASSINADO ) {
+    if (!body.searchTerm && !body.studentCode && !body.studentRA && !body.course && !body.marca && !body.persona && !body.categoriaGrade && !body.IND_CONTRATO_ASSINADO && !body.IND_CONTRATO_LIBERADO ) {
       throw createError({
         statusCode: 400,
         message: 'Termo de busca ou código do aluno são obrigatórios'
@@ -39,12 +39,12 @@ export default defineEventHandler(async (event): Promise<StudentSearchResponse> 
       studentCode: body.studentCode
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Student search error:', error)
 
     return {
       success: false,
-      error: error.message || 'Erro interno do servidor',
+      error: (error instanceof Error ? error.message : 'Erro interno do servidor'),
       students: [],
       total: 0
     }

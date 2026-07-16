@@ -11,12 +11,12 @@ export const useTokens = () => {
   const error = useState<string | null>('token-error', () => null)
 
   /**
-   * Gerar URL com token para um aluno em um ambiente específico
-   * Esta função será implementada na Fase 4
+   * Gerar URL com token para um aluno em um ambiente especï¿½fico
+   * Esta funï¿½ï¿½o serï¿½ implementada na Fase 4
    */
   const generateTokenUrl = async (
-    codAluno: string,
-    environment: Environment
+    _codAluno: string,
+    _environment: Environment
   ): Promise<TokenGenerationResult | null> => {
     generating.value = true
     error.value = null
@@ -32,10 +32,11 @@ export const useTokens = () => {
       // })
       // return response
 
-      throw new Error('Sistema de tokens ainda não implementado (Fase 4)')
-    } catch (err: any) {
+      throw new Error('Sistema de tokens ainda nï¿½o implementado (Fase 4)')
+    } catch (err) {
       console.error('Token generation error:', err)
-      error.value = err.data?.error || err.message || 'Erro ao gerar token'
+      const fetchErr = err as { data?: { error?: string }; message?: string }
+      error.value = fetchErr.data?.error || fetchErr.message || 'Erro ao gerar token'
       return null
     } finally {
       generating.value = false
@@ -43,21 +44,21 @@ export const useTokens = () => {
   }
 
   /**
-   * Abrir URL em nova aba com confirmação para produção
+   * Abrir URL em nova aba com confirmaï¿½ï¿½o para produï¿½ï¿½o
    */
   const openEnvironmentUrl = async (
     url: string,
     environment: Environment,
     studentName: string
   ): Promise<void> => {
-    // Confirmação especial para produção
+    // Confirmaï¿½ï¿½o especial para produï¿½ï¿½o
     if (environment === 'prod') {
       const confirmed = window.confirm(
-        `  ATENÇÃO - AMBIENTE DE PRODUÇÃO\n\n` +
-        `Você está prestes a acessar o ambiente de PRODUÇÃO.\n` +
-        `NÃO altere ou execute ações neste ambiente!\n\n` +
+        `ï¿½ ATENï¿½ï¿½O - AMBIENTE DE PRODUï¿½ï¿½O\n\n` +
+        `Vocï¿½ estï¿½ prestes a acessar o ambiente de PRODUï¿½ï¿½O.\n` +
+        `Nï¿½O altere ou execute aï¿½ï¿½es neste ambiente!\n\n` +
         `Aluno: ${studentName}\n` +
-        `Ambiente: PRODUÇÃO\n\n` +
+        `Ambiente: PRODUï¿½ï¿½O\n\n` +
         `Tem certeza que deseja continuar?`
       )
 
