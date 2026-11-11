@@ -457,3 +457,64 @@ export function getDatabricksConfig(config: ReturnType<typeof useRuntimeConfig>)
     schema: config.databricksSchema || 'default'
   }
 }
+
+/**
+ * Candidato da esteira do e2e: só o que o liberar e o link precisam.
+ */
+export interface CandidatoE2e {
+  COD_ALUNO: number
+  COD_CURSO: number
+  COD_TPO_PERSONA: number | null
+  COD_CAMPUS: number
+  COD_PERIODO_LETIVO: number
+}
+
+function numeroOuNulo(valor: unknown): number | null {
+  if (valor === null || valor === undefined || valor === '') return null
+  const n = Number(valor)
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * Sorteia até `limite` alunos que satisfazem as condições e conta quantos existem no total.
+ * As condições já chegam montadas e validadas (server/utils/e2e/catalogo.ts → perfilParaWhere).
+ */
+export async function searchCandidatesInDatabricks(
+  config: DatabricksConfig,
+  conditions: string[],
+  limite: number
+): Promise<{ candidatos: CandidatoE2e[], total: number }> {
+  if (!config.token) {
+    throw new Error('Databricks token não configurado')
+  }
+  const limiteSeguro = Math.max(1, Math.min(20, Math.trunc(limite)))
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+  const query = `
+    SELECT COD_ALUNO, COD_CURSO, COD_TPO_PERSONA, COD_CAMPUS, COD_PERIODO_LETIVO,
+           COUNT(*) OVER () AS TOTAL
+    FROM sb_jira.wv_alunos_rem
+    ${where}
+    ORDER BY rand()
+    LIMIT ${limiteSeguro}
+  `.trim()
+
+  const data = await executeQuery(config, config.token, query)
+  const linhas = data?.result?.data_array ?? []
+  const candidatos: CandidatoE2e[] = []
+  for (const row of linhas as unknown[][]) {
+    const aluno = numeroOuNulo(row[0])
+    const curso = numeroOuNulo(row[1])
+    const campus = numeroOuNulo(row[3])
+    const periodo = numeroOuNulo(row[4])
+    if (aluno === null || curso === null || campus === null || periodo === null) continue
+    candidatos.push({
+      COD_ALUNO: aluno,
+      COD_CURSO: curso,
+      COD_TPO_PERSONA: numeroOuNulo(row[2]),
+      COD_CAMPUS: campus,
+      COD_PERIODO_LETIVO: periodo
+    })
+  }
+  const total = numeroOuNulo((linhas[0] as unknown[] | undefined)?.[5]) ?? 0
+  return { candidatos, total }
+}

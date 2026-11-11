@@ -50,6 +50,16 @@ export function setTokenCache(
 }
 
 /**
+ * Refresh token guardado, mesmo com o access token vencido (para renovar sem pedir a senha).
+ */
+export function getRefreshTokenCache(
+  email: string,
+  environment: 'dev' | 'hml' | 'prod'
+): string | null {
+  return tokenCache.get(email)?.[environment]?.refresh_token || null
+}
+
+/**
  * Obter token do cache (se válido)
  * Retorna null se não existir ou estiver expirado
  */

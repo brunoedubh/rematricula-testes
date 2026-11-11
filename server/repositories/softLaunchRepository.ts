@@ -4,7 +4,10 @@ import {
   checkMultipleStudentsBlockStatus,
   liberarAluno,
   unlockStudent,
-  type StudentBlockStatus
+  lerEscopoRegra,
+  restaurarEscopoRegra,
+  type StudentBlockStatus,
+  type EscopoRegraAnterior
 } from '../utils/db_soft'
 
 /**
@@ -71,4 +74,29 @@ export async function blockStudent(
     codigocampus,
     codigoperiodoletivo
   )
+}
+
+/**
+ * Lê o estado da regra de liberação da combinação (usado pela esteira do e2e antes de liberar)
+ */
+export async function lerEscopo(
+  codigocurso: number,
+  identificadorpersona: number,
+  codigocampus: number,
+  codigoperiodoletivo: number
+): Promise<EscopoRegraAnterior> {
+  return await lerEscopoRegra(codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo)
+}
+
+/**
+ * Volta a combinação ao estado lido por lerEscopo (apaga a linha criada ou restaura o datafim)
+ */
+export async function restaurarEscopo(
+  codigocurso: number,
+  identificadorpersona: number,
+  codigocampus: number,
+  codigoperiodoletivo: number,
+  anterior: EscopoRegraAnterior
+): Promise<number> {
+  return await restaurarEscopoRegra(codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo, anterior)
 }

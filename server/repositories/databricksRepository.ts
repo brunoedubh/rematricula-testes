@@ -1,5 +1,5 @@
 import type { StudentSearchRequest, Aluno } from '../../types'
-import { getDatabricksConfig, searchStudentsInDatabricks } from '../utils/databricks'
+import { getDatabricksConfig, searchStudentsInDatabricks, searchCandidatesInDatabricks, type CandidatoE2e } from '../utils/databricks'
 
 /**
  * Repository para operações com Databricks
@@ -31,5 +31,16 @@ export async function findStudentByCode(
   userEmail: string
 ): Promise<Aluno | null> {
   const students = await findStudents({ studentCode }, userEmail)
-  return students.length > 0 ? students[0] : null
+  return students[0] ?? null
+}
+
+/**
+ * Candidatos da esteira do e2e para um perfil (condições já validadas)
+ */
+export async function findE2eCandidates(
+  conditions: string[],
+  limite = 5
+): Promise<{ candidatos: CandidatoE2e[], total: number }> {
+  const config = useRuntimeConfig()
+  return await searchCandidatesInDatabricks(getDatabricksConfig(config), conditions, limite)
 }

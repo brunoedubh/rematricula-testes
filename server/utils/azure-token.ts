@@ -3,7 +3,7 @@
  * Suporta geração para dev, hml e prod
  */
 
-import { getTokenCache, setTokenCache } from './token-cache'
+import { getRefreshTokenCache, getTokenCache, setTokenCache } from './token-cache'
 
 interface AzureTokenResponse {
   access_token: string
@@ -14,6 +14,8 @@ interface AzureTokenResponse {
 
 interface TokenGenerationResult {
   success: boolean
+  /** Sem token válido, sem refresh token que funcione e sem senha: quem chamou precisa pedir a senha */
+  requiresPassword?: boolean
   access_token?: string
   refresh_token?: string
   expires_in?: number
@@ -165,6 +167,40 @@ function getAzureConfig(environment: 'dev' | 'hml' | 'prod', config: ReturnType<
  * Renovar token usando refresh_token
  * (Para implementação futura)
  */
+/**
+ * Token de DEV/HML pedindo a senha só quando não há outro jeito:
+ * 1. token em cache ainda válido;
+ * 2. renovação pelo refresh token guardado (o access token vence em 60 min; o refresh dura bem mais);
+ * 3. senha (sessão ou informada), pelo fluxo ROPC.
+ * Sem nenhum dos três, devolve requiresPassword. Produção continua exigindo a senha a cada vez.
+ */
+export async function getOrRefreshToken(
+  email: string,
+  environment: 'dev' | 'hml',
+  password?: string
+): Promise<TokenGenerationResult> {
+  if (getTokenCache(email, environment)) {
+    return getOrGenerateToken(email, password ?? '', environment)
+  }
+
+  const refreshToken = getRefreshTokenCache(email, environment)
+  if (refreshToken) {
+    const renovado = await refreshAzureToken(email, refreshToken, environment)
+    if (renovado.success) return renovado
+  }
+
+  if (password) {
+    return getOrGenerateToken(email, password, environment)
+  }
+
+  return {
+    success: false,
+    from_cache: false,
+    requiresPassword: true,
+    error: 'Senha é necessária. Por favor, informe sua senha.'
+  }
+}
+
 export async function refreshAzureToken(
   email: string,
   refreshToken: string,

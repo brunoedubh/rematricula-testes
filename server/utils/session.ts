@@ -126,6 +126,23 @@ export function getUserCredentials(sessionUser: SessionUser): { email: string, p
   }
 }
 
+/**
+ * Guarda (criptografada) a senha informada num modal na sessão atual, para não pedir de novo.
+ * Útil quando a sessão foi recriada a partir do JWT (reinício do servidor em dev) e perdeu a senha.
+ */
+export function salvarSenhaNaSessao(event: H3Event, senhaCriptografada: string): void {
+  try {
+    const token = getCookie(event, 'auth-token')
+    if (!token) return
+    const config = useRuntimeConfig()
+    const decoded = jwt.verify(token, config.sessionSecret) as SessionTokenPayload
+    const sessionUser = decoded.sessionId ? sessionStore.get(decoded.sessionId) : undefined
+    if (sessionUser) sessionUser.encrypted_password = senhaCriptografada
+  } catch {
+    // Sessão inválida: nada a guardar
+  }
+}
+
 export async function getSessionFromEvent(event: H3Event): Promise<SessionUser | null> {
   try {
     const token = getCookie(event, 'auth-token')

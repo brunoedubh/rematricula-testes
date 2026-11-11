@@ -292,6 +292,20 @@ _Será implementado na próxima fase_
 
 Veja [PLAN.md](./PLAN.md) para detalhes completos do roadmap.
 
+## 🧪 Testes de tela da rematrícula (`e2e/`)
+
+A pasta `e2e/` é um projeto à parte, com `package.json` próprio (npm + Playwright) e fora do workspace pnpm do Nuxt. Ela grava cenários reais do HML e os reproduz sem backend nem credencial.
+
+```bash
+cd e2e
+npm ci
+npx playwright install chromium
+npm test
+```
+
+- Como gravar cenários e o que fica fora do git: [e2e/README.md](./e2e/README.md)
+- Plano (geração pelo Databricks, alunos não encontrados, execução): [e2e/PLANO.md](./e2e/PLANO.md)
+
 ## 📚 Documentação Adicional
 
 - [PLAN.md](./PLAN.md) - Documentação completa do projeto, arquitetura e decisões técnicas

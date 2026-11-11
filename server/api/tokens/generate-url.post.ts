@@ -11,10 +11,10 @@
  */
 
 import type { H3Event } from 'h3'
-import { getSessionFromEvent } from '../../utils/session'
-import { getOrGenerateToken } from '../../utils/azure-token'
+import { getSessionFromEvent, salvarSenhaNaSessao } from '../../utils/session'
+import { getOrGenerateToken, getOrRefreshToken } from '../../utils/azure-token'
 import { buildAccessUrl, validateStudentCode } from '../../utils/url-builder'
-import { decrypt } from '../../utils/encryption'
+import { decrypt, encrypt } from '../../utils/encryption'
 
 interface GenerateUrlRequest {
   studentCode: string
@@ -62,8 +62,7 @@ export default defineEventHandler(async (event: H3Event): Promise<GenerateUrlRes
       })
     }
 
-    // Determinar senha a usar
-    let password: string
+    let tokenResult
 
     if (body.environment === 'prod') {
       // Para produção, senha é obrigatória
@@ -73,32 +72,22 @@ export default defineEventHandler(async (event: H3Event): Promise<GenerateUrlRes
           message: 'Senha é obrigatória para acesso ao ambiente de produção'
         })
       }
-      password = body.password
+      tokenResult = await getOrGenerateToken(session.email, body.password, 'prod')
     } else {
-      // Para dev/hml, tentar usar senha da sessão primeiro
-      if (!session.encrypted_password || session.encrypted_password === '') {
-        // Sessão não tem senha (provavelmente após reload), solicitar senha
-        if (!body.password) {
-          // Retornar resposta normal (não erro HTTP) para que o frontend possa tratar
-          return {
-            success: false,
-            error: 'Senha é necessária. Por favor, informe sua senha.',
-            requiresPassword: true
-          }
-        }
-        password = body.password
-      } else {
-        // Usar senha da sessão se fornecida pelo usuário, senão descriptografar
-        password = body.password || decrypt(session.encrypted_password, config.encryptionKey)
+      // DEV/HML: a senha só é pedida quando não há token válido nem refresh token que renove
+      // (getOrRefreshToken). Senha da sessão ou informada agora; a informada fica guardada na sessão.
+      const password = body.password
+        || (session.encrypted_password ? decrypt(session.encrypted_password, config.encryptionKey) : undefined)
+      tokenResult = await getOrRefreshToken(session.email, body.environment, password)
+
+      if (tokenResult.requiresPassword) {
+        // Resposta normal (não erro HTTP) para que o frontend possa pedir a senha
+        return { success: false, error: tokenResult.error, requiresPassword: true }
+      }
+      if (tokenResult.success && body.password) {
+        salvarSenhaNaSessao(event, encrypt(body.password, config.encryptionKey))
       }
     }
-
-    // Gerar ou obter token do cache
-    const tokenResult = await getOrGenerateToken(
-      session.email,
-      password,
-      body.environment
-    )
 
     if (!tokenResult.success) {
       throw createError({

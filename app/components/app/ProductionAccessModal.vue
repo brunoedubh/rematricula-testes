@@ -152,7 +152,7 @@ function handleConfirm() {
           Cancelar
         </UButton>
         <UButton
-          color="red"
+          color="error"
           @click="handleConfirm"
         >
           <UIcon name="i-heroicons-arrow-right-circle" class="mr-2" />

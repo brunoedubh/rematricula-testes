@@ -59,6 +59,11 @@ export default defineNuxtConfig({
     dbSoftSsl: process.env.DB_SOFT_SSL || 'true',
     dbSoftSchema: process.env.DB_SOFT_SCHEMA || 'public',
 
+    // Esteira do e2e: só roda se DB_SOFT_HOST for este host (HML)
+    e2eDbSoftHostHml: process.env.E2E_DB_SOFT_HOST_HML || '',
+    // Aba Execução do e2e: endereço do Vue 3 rodando local (alvo "local")
+    e2eAlvoLocal: process.env.E2E_ALVO_LOCAL || 'http://localhost:5173/rematricula/',
+
     allowedDomain: process.env.ALLOWED_DOMAIN || 'animaeducacao.com.br',
 
     // URLs base por ambiente (server-side)

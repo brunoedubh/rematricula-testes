@@ -1,5 +1,4 @@
 <script setup lang="ts">
-//import DashPendencias from '~/components/app/DashPendencias.vue'
 import DashAlunos from '~/components/app/DashAlunos.vue'
 
 const title = 'Rematrícula - Alunos'

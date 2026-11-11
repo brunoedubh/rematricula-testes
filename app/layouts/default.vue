@@ -1,6 +1,9 @@
 <script setup lang="ts">
 const user = ref<{ loggedIn?: boolean } | null>(null)
 const isCollapsed = ref(true)
+function toggleCollapsed() {
+  isCollapsed.value = !isCollapsed.value
+}
 
 onMounted(async () => {
   try {
@@ -24,6 +27,11 @@ const navItems = ref([
       label: 'Alunos e Tokens',
       to: '/app/alunos',
       icon: 'i-lucide-users'
+    },
+    {
+      label: 'Cenários E2E',
+      to: '/app/cenarios',
+      icon: 'i-lucide-clapperboard'
     }
   ]
 ])
@@ -48,7 +56,7 @@ const navItems = ref([
           variant="ghost"
           :icon="isCollapsed ? 'i-lucide-menu' : 'i-lucide-chevron-left'"
           class="shrink-0"
-          @click="isCollapsed = !isCollapsed"
+          @click="toggleCollapsed"
         />
       </div>
       

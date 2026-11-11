@@ -1,0 +1,30 @@
+{
+  "versao": 1,
+  "descricao": "Catálogo de cenários da jornada do aluno. Cada cenário gravado vira um teste automaticamente (tests/cenarios.spec.mjs). Um cenário por linha; a esteira do rematricula-testes reescreve o arquivo neste formato.",
+  "status_possiveis": {
+    "gravado": "tem gravação e teste",
+    "a-gravar": "perfil definido, falta achar aluno ou gravar",
+    "a-confirmar": "a esteira gravou um aluno, mas o cenário não tem esperado.rota: alguém confere a tela (observado.rota) e preenche o esperado",
+    "nao-encontrado": "nenhum candidato abriu em HML: incluir aluno manualmente",
+    "divergente": "os candidatos abriram em outra tela (observado.rotas): revisar o perfil ou o esperado"
+  },
+  "perfil": "Chaves que são colunas da sb_jira.wv_alunos_rem entram no WHERE ('S'/'N', null, '>0', '~texto'). Qualquer outra chave é descrição e torna o cenário manual (PLANO.md 3.1.1).",
+  "cenarios": [
+    {"id":"resumo-grade-confirmada","titulo":"Resumo: aluno com grade confirmada","status":"gravado","gravadoEm":"2026-11-11","perfil":{"IND_CONFIRMADO_OFERTA_PRINC":"S"},"esperado":{"rota":"alteracaoresumo","textos":["Confirmados para o semestre"],"botoes":["Enviar grade para o e-mail"]},"fonte":"databricks","alunosNoPerfil":185691,"geradoPor":"bruno.eduardo"},
+    {"id":"fora-do-prazo","titulo":"Fora do prazo de rematrícula","status":"gravado","gravadoEm":"2026-11-11","perfil":{"softLaunch":"fora"},"esperado":{"rota":"ForadePrazo","textos":["Estamos fora do período"]},"fonte":"manual"},
+    {"id":"certificado-pendente","titulo":"Bloqueio por certificado do ensino médio pendente","status":"gravado","gravadoEm":"2026-11-11","perfil":{"tiposBloqueioAcesso":"CertificadoConclusaoEnsinoMedioPendente"},"esperado":{"rota":"envioCertificado","textos":["certificado de conclusão do ensino médio"],"botoes":["Enviar documento"]},"fonte":"manual"},
+    {"id":"erro-api-aluno","titulo":"Erro da API ao carregar o aluno","status":"gravado","gravadoEm":"2026-11-11","perfil":{"api":"ObterInformacoesAluno 500"},"esperado":{"rota":"erroDeSistema","textos":["Aconteceu algo de errado"],"botoes":["Tentar Novamente"]},"fonte":"manual"},
+    {"id":"escolha-disciplinas","titulo":"Dentro do prazo, sem grade escolhida","status":"a-confirmar","perfil":{"IND_CONFIRMADO_OFERTA_PRINC":"N","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S","IND_CONTRATO_ASSINADO":"S"},"fonte":"databricks","alunosNoPerfil":6532,"geradoPor":"bruno.eduardo","gravadoEm":"2026-11-11","observado":{"em":"2026-11-11","rota":"erro/rematriculaNaoIniciada"}},
+    {"id":"pendencia-financeira","titulo":"Pendência financeira","status":"divergente","perfil":{"IND_REG_FINANCEIRO":"N","IND_MEDICINA":"N"},"esperado":{"rota":"pendencia/financeira"},"fonte":"databricks","alunosNoPerfil":26559,"geradoPor":"bruno.eduardo","observado":{"em":"2026-11-11","rotas":["alteracaoresumo"]}},
+    {"id":"contrato-a-aceitar","titulo":"Contrato liberado e não aceito","status":"gravado","perfil":{"IND_CONTRATO_LIBERADO":"S","IND_CONTRATO_ASSINADO":"N","IND_MEDICINA":"N"},"esperado":{"rota":"/contrato$"},"fonte":"databricks","alunosNoPerfil":6186,"geradoPor":"bruno.eduardo","gravadoEm":"2026-11-11"},
+    {"id":"medicina-contrato","titulo":"Medicina: confirmação de envio / assinatura digital","status":"divergente","perfil":{"IND_MEDICINA":"S"},"esperado":{"rota":"contrato/confirmacao-envio|pendencia/assinaturaDigital"},"fonte":"databricks","alunosNoPerfil":11342,"geradoPor":"bruno.eduardo","observado":{"em":"2026-11-11","rotas":["erro/rematriculaNaoIniciada"]}},
+    {"id":"uc-personalizavel","titulo":"UC personalizável pendente","status":"divergente","perfil":{"IND_OFERTA_UCDP":"S","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S"},"esperado":{"rota":"UcPersonalizavel"},"fonte":"databricks","alunosNoPerfil":8358,"geradoPor":"bruno.eduardo","observado":{"em":"2026-11-11","rotas":["alteracaoresumo","preVisualizacaoGrade"]}},
+    {"id":"core-curriculum","titulo":"Core curriculum pendente","status":"divergente","perfil":{"IND_OFERTA_CORE":"S","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S"},"esperado":{"rota":"CoreCurriculum"},"fonte":"databricks","alunosNoPerfil":15062,"geradoPor":"bruno.eduardo","observado":{"em":"2026-11-11","rotas":["alteracaoresumo","preVisualizacaoGrade"]}},
+    {"id":"pendencia-academica-e2a","titulo":"Pendência acadêmica E2A","status":"a-gravar","perfil":{"pendenciaAcademicaE2a":"a view não tem indicador: incluir aluno manualmente","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S"},"esperado":{"rota":"pendenciasAcademica"},"fonte":"manual"},
+    {"id":"alteracao-com-dp","titulo":"Alteração de grade com DP","status":"a-confirmar","perfil":{"QTDE_DP_NA_MAT":">0","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S"},"fonte":"databricks","alunosNoPerfil":34157,"geradoPor":"bruno.eduardo","avancos":["certificado"],"gravadoEm":"2026-11-11","observado":{"em":"2026-11-11","rota":"preVisualizacaoGrade"}},
+    {"id":"modular","titulo":"Aluno modular","status":"a-confirmar","perfil":{"DSC_TPO_GRD_CURRICULAR":"~modular","IND_REG_FINANCEIRO":"S","IND_CONTRATO_LIBERADO":"S"},"fonte":"databricks","alunosNoPerfil":155201,"geradoPor":"bruno.eduardo","gravadoEm":"2026-11-11","observado":{"em":"2026-11-11","rota":"alteracaoresumo"}},
+    {"id":"sem-persona","titulo":"Sem persona: mudança acadêmica / ajustando grade","status":"a-gravar","perfil":{"COD_TPO_PERSONA":null,"liberar":"exige persona: incluir aluno manualmente"},"esperado":{"rota":"mudancaAcademica|ajustandoGradeHoraria"},"fonte":"manual"},
+    {"id":"rematricula-nao-iniciada","titulo":"Rematrícula não iniciada","status":"a-gravar","perfil":{"softLaunch":"fora","indicadorE2a2":false,"indicadorRadial":false},"esperado":{"rota":"erro/rematriculaSoftlaunch"},"fonte":"manual"},
+    {"id":"funcionario-download-contrato","titulo":"Funcionário: download de contrato","status":"a-gravar","perfil":{"rota":"autorizacao-idp/contratoDownload"},"fonte":"manual"}
+  ]
+}

@@ -31,7 +31,6 @@ Nuxt 4 full-stack app — frontend and server API in the same project. UI built 
 ### App-specific UI components (`app/components/app/`)
 
 - `DashAlunos.vue` — Main student search & token generation interface
-- `DashPendencias.vue` — Pending issues dashboard backed by `/api/pendencias/*` endpoints
 - `SearchBar.vue` — Student search filters input
 - `StudentList.vue` — Renders list of `StudentCard` items
 - `StudentCard.vue` — Individual student card with per-environment token generation buttons
@@ -43,8 +42,9 @@ Nuxt 4 full-stack app — frontend and server API in the same project. UI built 
 ### Page routes
 
 - `/login` — Public login page (layout: `auth`)
-- `/app` — Dashboard de Pendências (`DashPendencias` component)
+- `/app` — Busca de Alunos (`DashAlunos` component)
 - `/app/alunos` — Busca de Alunos e geração de tokens (`DashAlunos` component)
+- `/app/cenarios` — Cenários E2E: cobertura do catálogo, alunos não encontrados e execução da suíte (`app/components/app/e2e/`, ver `e2e/PLANO.md`)
 
 ### Authentication flow
 
@@ -99,6 +99,17 @@ Sessions are stored in a `Map<string, SessionUser>` in `server/utils/session.ts`
 | GET  | `/api/pendencias/resumo` | Aggregate counts: aptos, com pendências, ativas |
 | GET  | `/api/pendencias/por-tipo` | All 11 pending types with affected student counts |
 | GET  | `/api/pendencias/alunos` | Top 200 students with pending issues (sorted by count) |
+| GET  | `/api/e2e/cenarios` | E2E catalog + recordings per scenario + pipeline state |
+| POST | `/api/e2e/cenarios` | New E2E scenario (optionally from a candidate recording) |
+| PATCH | `/api/e2e/cenarios/:id` | Edit title/expected; confirm `a-confirmar` → `gravado` |
+| POST | `/api/e2e/gerar` | Start E2E generation pipeline in background (HML only) |
+| POST | `/api/e2e/gravar` | Record a given student for a scenario (HML only) |
+| GET  | `/api/e2e/captura` | Screenshot PNG from `e2e/gravacoes` |
+| GET  | `/api/e2e/execucoes` | Targets, running state and history of suite runs (`e2e/resultados/*.json`) |
+| POST | `/api/e2e/execucoes` | Run the Playwright suite in background (no credentials; target + devices + scenarios) |
+| GET  | `/api/e2e/execucoes/:id` | One run's result per scenario × device |
+| POST | `/api/e2e/execucoes/cancelar` | Stop the running suite |
+| GET  | `/api/e2e/artefato` | Screenshot or trace of a run (`e2e/resultados/<id>/artefatos`) |
 
 ### URL pattern for generated links
 

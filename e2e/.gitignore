@@ -1,0 +1,10 @@
+# Segredos e dados reais: nunca versionar
+.env.local
+gravacoes/
+cenarios/alunos.local.json
+
+# Gerados
+node_modules/
+test-results/
+playwright-report/
+resultados/

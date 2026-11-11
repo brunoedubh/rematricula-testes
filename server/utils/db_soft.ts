@@ -322,3 +322,54 @@ export async function unlockStudent(
     }
   }
 }
+/**
+ * Estado da regra de liberação de uma combinação, antes de a esteira do e2e mexer nela.
+ * Lê a linha independentemente do período (vigente ou não).
+ */
+export interface EscopoRegraAnterior {
+  existe: boolean
+  datafim: Date | null
+}
+
+const FILTRO_ESCOPO = `
+  codigocurso = $1
+  AND identificadorpersona = $2
+  AND codigocampus = $3
+  AND codigoperiodoletivo = $4
+  AND codigonivelcurso = 1
+  AND codigoregra = 'a511dd31-b291-4b09-a94f-52e95936d418'
+`
+
+export async function lerEscopoRegra(
+  codigocurso: number,
+  identificadorpersona: number,
+  codigocampus: number,
+  codigoperiodoletivo: number
+): Promise<EscopoRegraAnterior> {
+  const result = await getDb().query(
+    `SELECT datafim FROM escopo_regra WHERE ${FILTRO_ESCOPO} ORDER BY datafim DESC LIMIT 1`,
+    [codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo]
+  )
+  if (result.rows.length === 0) return { existe: false, datafim: null }
+  return { existe: true, datafim: result.rows[0].datafim ?? null }
+}
+
+/**
+ * Devolve a combinação ao estado lido por lerEscopoRegra:
+ * - não existia: apaga a linha criada por liberarAluno;
+ * - existia: volta o datafim anterior.
+ */
+export async function restaurarEscopoRegra(
+  codigocurso: number,
+  identificadorpersona: number,
+  codigocampus: number,
+  codigoperiodoletivo: number,
+  anterior: EscopoRegraAnterior
+): Promise<number> {
+  const chave = [codigocurso, identificadorpersona, codigocampus, codigoperiodoletivo]
+  const result = anterior.existe
+    ? await getDb().query(`UPDATE escopo_regra SET datafim = $5 WHERE ${FILTRO_ESCOPO}`, [...chave, anterior.datafim])
+    : await getDb().query(`DELETE FROM escopo_regra WHERE ${FILTRO_ESCOPO}`, chave)
+  return result.rowCount ?? 0
+}
+

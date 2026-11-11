@@ -1,0 +1,20 @@
+{
+  "name": "rematricula-e2e",
+  "version": "1.0.0",
+  "description": "Cenários e testes e2e da rematrícula (gravação no HML + reprodução)",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "relatorio": "playwright show-report",
+    "gravar": "node scripts/gravar.mjs",
+    "test:unidade": "node --test scripts/classificar.test.mjs scripts/avancos.test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}

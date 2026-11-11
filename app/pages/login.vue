@@ -31,14 +31,10 @@ const fields = [{
 }]
 
 const schema = z.object({
-  email: z.string({
-    required_error: 'Usuário é obrigatório',
-    invalid_type_error: 'Usuário é obrigatório'
-  }).min(1, 'Usuário é obrigatório').min(4, 'Usuário deve ter pelo menos 4 caracteres'),
-  password: z.string({
-    required_error: 'Senha é obrigatória',
-    invalid_type_error: 'Senha é obrigatória'
-  }).min(1, 'Senha é obrigatória').min(8, 'Senha deve ter pelo menos 8 caracteres')
+  email: z.string({ error: 'Usuário é obrigatório' })
+    .min(1, 'Usuário é obrigatório').min(4, 'Usuário deve ter pelo menos 4 caracteres'),
+  password: z.string({ error: 'Senha é obrigatória' })
+    .min(1, 'Senha é obrigatória').min(8, 'Senha deve ter pelo menos 8 caracteres')
 })
 
 type Schema = z.output<typeof schema>
@@ -48,10 +44,9 @@ const error = ref('')
 
 async function handleLogin(payload: FormSubmitEvent<Schema>) {
   // Prevenir comportamento padrão do formulário para evitar exposição na URL
-  if (payload.event) {
-    payload.event.preventDefault()
-    payload.event.stopPropagation()
-  }
+  // (no Nuxt UI v4 o próprio payload é o SubmitEvent)
+  payload.preventDefault()
+  payload.stopPropagation()
 
   if (!payload.data.email || !payload.data.password) {
     error.value = 'Email e senha são obrigatórios'
