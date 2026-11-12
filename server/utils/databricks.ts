@@ -476,6 +476,23 @@ function numeroOuNulo(valor: unknown): number | null {
 }
 
 /**
+ * SQL da busca de candidatos do e2e (o mesmo que a tela mostra em "Filtro SQL").
+ * As condições já chegam montadas e validadas (server/utils/e2e/catalogo.ts → perfilParaWhere).
+ */
+export function sqlCandidatosE2e(conditions: string[], limite: number): string {
+  const limiteSeguro = Math.max(1, Math.min(20, Math.trunc(limite)))
+  const where = conditions.length > 0 ? `WHERE ${conditions.join('\n  AND ')}` : ''
+  return [
+    'SELECT COD_ALUNO, COD_CURSO, COD_TPO_PERSONA, COD_CAMPUS, COD_PERIODO_LETIVO,',
+    '       COUNT(*) OVER () AS TOTAL',
+    'FROM sb_jira.wv_alunos_rem',
+    where,
+    'ORDER BY rand()',
+    `LIMIT ${limiteSeguro}`
+  ].filter(Boolean).join('\n')
+}
+
+/**
  * Sorteia até `limite` alunos que satisfazem as condições e conta quantos existem no total.
  * As condições já chegam montadas e validadas (server/utils/e2e/catalogo.ts → perfilParaWhere).
  */
@@ -487,16 +504,7 @@ export async function searchCandidatesInDatabricks(
   if (!config.token) {
     throw new Error('Databricks token não configurado')
   }
-  const limiteSeguro = Math.max(1, Math.min(20, Math.trunc(limite)))
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-  const query = `
-    SELECT COD_ALUNO, COD_CURSO, COD_TPO_PERSONA, COD_CAMPUS, COD_PERIODO_LETIVO,
-           COUNT(*) OVER () AS TOTAL
-    FROM sb_jira.wv_alunos_rem
-    ${where}
-    ORDER BY rand()
-    LIMIT ${limiteSeguro}
-  `.trim()
+  const query = sqlCandidatosE2e(conditions, limite)
 
   const data = await executeQuery(config, config.token, query)
   const linhas = data?.result?.data_array ?? []

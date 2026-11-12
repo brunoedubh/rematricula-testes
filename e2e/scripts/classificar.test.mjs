@@ -29,10 +29,21 @@ test('não abriu: ficou na autorização ou caiu em erro genérico', () => {
 });
 
 test('outra tela quando abriu mas não é a esperada', () => {
-  assert.deepEqual(classificar({ esperado: 'pendencia/financeira', url: `${base}/ForadePrazo` }), { resultado: 'outra-tela', rota: 'ForadePrazo' });
+  assert.deepEqual(classificar({ esperado: 'pendencia/financeira', url: `${base}/alteracaoResumo` }), { resultado: 'outra-tela', rota: 'alteracaoResumo' });
 });
 
 test('sem esperado: abriu, mas alguém precisa confirmar a tela', () => {
   assert.equal(classificar({ esperado: null, url: `${base}/jornada` }).resultado, 'sem-esperado');
   assert.equal(classificar({ esperado: null, url: `${base}/autorizacao-idp/token/a/b/1` }).resultado, 'nao-abriu');
+});
+
+test('fora do período não é aceito como tela de cenário sem esperado', () => {
+  assert.equal(classificar({ esperado: null, url: `${base}/erro/rematriculaNaoIniciada` }).resultado, 'fora-do-periodo');
+  assert.equal(classificar({ esperado: 'contrato', url: `${base}/erro/rematriculaNaoIniciada` }).resultado, 'fora-do-periodo');
+  assert.equal(classificar({ esperado: null, url: `${base}/ForadePrazo` }).resultado, 'fora-do-periodo');
+});
+
+test('fora do período ainda confere quando é a tela esperada do cenário', () => {
+  assert.equal(classificar({ esperado: 'ForadePrazo', url: `${base}/ForadePrazo` }).resultado, 'confere');
+  assert.equal(classificar({ esperado: 'erro/rematriculaSoftlaunch', url: `${base}/erro/rematriculaSoftlaunch` }).resultado, 'confere');
 });

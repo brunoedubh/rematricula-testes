@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { CatalogoE2e, CenarioE2e, FonteCenarioE2e } from '../../../types'
+import type { CatalogoE2e, CenarioE2e, DescarteE2e, FonteCenarioE2e } from '../../../types'
+import { COLUNAS_VIEW, validarWhere } from './where'
 
 /**
  * Catálogo de cenários do e2e (e2e/PLANO.md 3.1.1).
@@ -15,36 +16,8 @@ export function pastaE2e(): string {
 const arquivoCatalogo = () => path.join(pastaE2e(), 'cenarios', 'catalogo.json')
 const arquivoAlunos = () => path.join(pastaE2e(), 'cenarios', 'alunos.local.json')
 
-/**
- * Colunas da sb_jira.wv_alunos_rem aceitas no perfil (conferidas com DESCRIBE em 11/11/2026).
- * A view NÃO tem IND_CONFIRMADO_UCDP, IND_CONFIRMADO_CORE nem IND_*_PEND_ACAD_E2A2:
- * para esses casos, o perfil usa só a oferta e quem decide é a tela real (classificação).
- */
-const COLUNAS_PERFIL = new Set([
-  'COD_ALUNO',
-  'COD_CURSO',
-  'COD_CAMPUS',
-  'COD_MARCA',
-  'COD_PERIODO_LETIVO',
-  'COD_TPO_PERSONA',
-  'COD_CATEGORIA_GRADE',
-  'DSC_TPO_GRD_CURRICULAR',
-  'DSC_CATEGORIA_GRADE',
-  'DSC_STA_MATRICULA',
-  'IND_REG_FINANCEIRO',
-  'IND_EXECUTOU_LIBERACAO',
-  'IND_EXECUTOU_PROMOCAO',
-  'IND_CALOURO',
-  'IND_MEDICINA',
-  'IND_CONFIRMADO_OFERTA_PRINC',
-  'IND_OFERTA_UCDP',
-  'IND_OFERTA_CORE',
-  'IND_POSSUI_HORARIO',
-  'IND_NAO_POSSUI_HORARIO',
-  'IND_CONTRATO_LIBERADO',
-  'IND_CONTRATO_ASSINADO',
-  'QTDE_DP_NA_MAT'
-])
+/** Colunas aceitas: a mesma lista que a tela mostra (types/e2e.ts → COLUNAS_VIEW_E2E). */
+const COLUNAS_PERFIL = COLUNAS_VIEW
 
 /** Chave com cara de coluna da view: se não estiver na lista, é erro de digitação, não descrição. */
 const PARECE_COLUNA = /^(IND|COD|QTDE|DSC|NUM|NOM|SGL)_[A-Z0-9_]+$/
@@ -55,6 +28,15 @@ export class PerfilInvalidoError extends Error {}
  * databricks: todas as chaves do perfil são colunas da view.
  * manual: há chave descritiva (softLaunch, api, rota…), que a view não enxerga.
  */
+export function fonteDoCenario(c: Pick<CenarioE2e, 'perfil' | 'where'>): FonteCenarioE2e {
+  return c.where?.trim() ? 'databricks' : fonteDoPerfil(c.perfil ?? {})
+}
+
+/** Só as chaves descritivas do perfil (as de coluna saem quando o cenário ganha um WHERE escrito à mão). */
+export function perfilDescritivo(perfil: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(perfil).filter(([k]) => !COLUNAS_PERFIL.has(k)))
+}
+
 export function fonteDoPerfil(perfil: Record<string, unknown>): FonteCenarioE2e {
   const chaves = Object.keys(perfil)
   if (chaves.length === 0) return 'manual'
@@ -63,6 +45,19 @@ export function fonteDoPerfil(perfil: Record<string, unknown>): FonteCenarioE2e 
 
 function condicao(coluna: string, valor: unknown): string {
   if (valor === null) return `${coluna} IS NULL`
+  // Lista → IN (números ou 'S'/'N'); "!" na frente do primeiro item → NOT IN. Ex.: [13064, 13082] ou ["!", 13064]
+  if (Array.isArray(valor)) {
+    const negar = valor[0] === '!'
+    const itens = negar ? valor.slice(1) : valor
+    if (!itens.length || itens.length > 200) throw new PerfilInvalidoError(`Lista vazia ou grande demais em ${coluna}`)
+    const literais = itens.map((v) => {
+      if (typeof v === 'number' && Number.isInteger(v)) return String(v)
+      if (typeof v === 'string' && /^-?\d{1,12}$/.test(v)) return String(Number(v))
+      if (v === 'S' || v === 'N') return `'${v}'`
+      throw new PerfilInvalidoError(`Valor não suportado na lista de ${coluna}: ${JSON.stringify(v)} (use números ou 'S'/'N')`)
+    })
+    return `${coluna} ${negar ? 'NOT IN' : 'IN'} (${literais.join(', ')})`
+  }
   if (typeof valor === 'number' && Number.isInteger(valor)) return `${coluna} = ${valor}`
   if (typeof valor !== 'string') {
     throw new PerfilInvalidoError(`Valor não suportado em ${coluna}: ${JSON.stringify(valor)}`)
@@ -78,7 +73,7 @@ function condicao(coluna: string, valor: unknown): string {
   const parecido = valor.match(/^~([\p{L}\d _-]{1,50})$/u)
   if (parecido) return `LOWER(${coluna}) LIKE '%${parecido[1]!.toLowerCase()}%'`
 
-  throw new PerfilInvalidoError(`Valor não suportado em ${coluna}: "${valor}" (use 'S'/'N', null, número, ">0" ou "~texto")`)
+  throw new PerfilInvalidoError(`Valor não suportado em ${coluna}: "${valor}" (use 'S'/'N', null, número, ">0", "~texto" ou lista [1, 2])`)
 }
 
 /**
@@ -101,7 +96,7 @@ export async function lerCatalogo(): Promise<CatalogoE2e> {
   const texto = await fs.readFile(arquivoCatalogo(), 'utf8')
   const catalogo = JSON.parse(texto) as CatalogoE2e
   for (const c of catalogo.cenarios) {
-    c.fonte ??= fonteDoPerfil(c.perfil ?? {})
+    c.fonte ??= fonteDoCenario(c)
   }
   return catalogo
 }
@@ -133,7 +128,65 @@ export async function atualizarCenario(id: string, alterar: (c: CenarioE2e) => v
   return cenario
 }
 
-/** Código real do aluno usado em cada cenário. Fica fora do git (e2e/.gitignore). */
+/** WHERE do cenário em texto: o escrito à mão ou o montado a partir das colunas do perfil. */
+export function whereDoCenario(c: Pick<CenarioE2e, 'perfil' | 'where'>): string {
+  if (c.where?.trim()) return validarWhere(c.where)
+  return perfilParaWhere(c.perfil ?? {}).join('\n  AND ')
+}
+
+/**
+ * Condições do WHERE de um cenário: WHERE (ou colunas do perfil) + alunos descartados (NOT IN) + período opcional.
+ * É o que a esteira usa e o que a tela mostra em "Filtro SQL".
+ */
+export function condicoesDoCenario(c: Pick<CenarioE2e, 'perfil' | 'where'>, descartados: number[] = [], periodo?: number): string[] {
+  const condicoes = c.where?.trim() ? [`(${validarWhere(c.where)})`] : perfilParaWhere(c.perfil ?? {})
+  if (periodo) condicoes.push(`COD_PERIODO_LETIVO = ${Math.trunc(periodo)}`)
+  const codigos = [...new Set(descartados.filter(n => Number.isInteger(n) && n > 0))]
+  if (codigos.length) condicoes.push(`COD_ALUNO NOT IN (${codigos.join(', ')})`)
+  return condicoes
+}
+
+// ---------------------------------------------------------------------------
+// Alunos descartados (cenarios/descartados.local.json, fora do git): códigos que alguém viu na captura
+// que não servem para o cenário. A esteira não sorteia mais esses alunos para ele.
+// ---------------------------------------------------------------------------
+
+const arquivoDescartados = () => path.join(pastaE2e(), 'cenarios', 'descartados.local.json')
+
+export async function lerDescartados(): Promise<Record<string, DescarteE2e[]>> {
+  try {
+    const bruto = JSON.parse(await fs.readFile(arquivoDescartados(), 'utf8')) as Record<string, unknown>
+    const r: Record<string, DescarteE2e[]> = {}
+    for (const [id, lista] of Object.entries(bruto)) {
+      if (Array.isArray(lista)) r[id] = lista.filter((d): d is DescarteE2e => typeof d?.codigoAluno === 'number')
+    }
+    return r
+  } catch {
+    return {}
+  }
+}
+
+export async function gravarDescartados(descartados: Record<string, DescarteE2e[]>): Promise<void> {
+  await escreverAtomico(arquivoDescartados(), JSON.stringify(descartados, null, 2) + '\n')
+}
+
+export async function removerAlunoLocal(id: string): Promise<void> {
+  const alunos = await lerAlunosLocais()
+  if (!(id in alunos)) return
+  const restantes = Object.fromEntries(Object.entries(alunos).filter(([chave]) => chave !== id))
+  await escreverAtomico(arquivoAlunos(), JSON.stringify(restantes, null, 2) + '\n')
+}
+
+/** cenarios/alunos.local.json: id do cenário → código do aluno gravado (fora do git). */
+export async function lerAlunosLocais(): Promise<Record<string, number>> {
+  try {
+    const bruto = JSON.parse(await fs.readFile(arquivoAlunos(), 'utf8')) as Record<string, unknown>
+    return Object.fromEntries(Object.entries(bruto).filter((e): e is [string, number] => typeof e[1] === 'number'))
+  } catch {
+    return {}
+  }
+}
+
 export async function registrarAlunoLocal(id: string, codigoAluno: number): Promise<void> {
   let alunos: Record<string, number> = {}
   try {

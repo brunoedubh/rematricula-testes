@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import type { AlunoHmlE2e, RegraGravacaoE2e } from '../../../types'
 import { pastaE2e } from './catalogo'
 
 /**
@@ -10,25 +11,32 @@ export interface ResultadoGravacao {
   ok: boolean
   url?: string
   rota?: string
-  resultado?: 'confere' | 'nao-abriu' | 'outra-tela' | 'sem-esperado'
+  resultado?: 'confere' | 'nao-abriu' | 'fora-do-periodo' | 'outra-tela' | 'outra-regra' | 'sem-esperado'
   /** Caminhos relativos a e2e/ */
   har?: string
   png?: string
   apis?: { metodo: string, status: number, caminho: string }[]
   /** Telas que travavam e foram avançadas na gravação (e2e/scripts/avancos.mjs) */
   avancos?: string[]
+  /** O aluno como o HML o vê (sem dados pessoais) */
+  aluno?: AlunoHmlE2e | null
+  /** Regra de tela que o dado gravado aciona (e2e/regras/regras.mjs) */
+  regra?: RegraGravacaoE2e | null
   erro?: string
 }
 
 const TEMPO_MAXIMO_MS = 3 * 60 * 1000
 
 /**
- * Roda `node scripts/gravar.mjs --json --saida <saida> [--esperado <regex>]` dentro de e2e/.
+ * Roda `node scripts/gravar.mjs --json --saida <saida> [--esperado <regex>] [--regra <ids>]` dentro de e2e/.
+ * Com regra, o aluno que abre mas cai em outra regra sai como "outra-regra" (não serve para o cenário).
  * @param saida caminho sem extensão, relativo a e2e/ (ex.: gravacoes/candidatos/pendencia-financeira-123)
  */
-export function gravarComLink(link: string, saida: string, esperado?: string): Promise<ResultadoGravacao> {
+export function gravarComLink(link: string, saida: string, esperado?: string, regra?: string | string[]): Promise<ResultadoGravacao> {
   const args = ['scripts/gravar.mjs', '--json', '--saida', saida]
   if (esperado) args.push('--esperado', esperado)
+  const regras = regra ? [regra].flat() : []
+  if (regras.length) args.push('--regra', regras.join(','))
 
   return new Promise((resolve) => {
     const filho = spawn(process.execPath, args, {

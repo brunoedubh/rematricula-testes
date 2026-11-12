@@ -3,27 +3,35 @@
  * Novo cenário no catálogo. Com `aPartirDe`, usa a gravação de um candidato
  * (gravacoes/candidatos/<cenario>--<aluno>.har) como gravação do cenário novo.
  *
- * Body: { id, titulo, perfil?, descricao?, esperado?: { rota?, textos?, botoes? },
+ * Body: { id, titulo, where?, perfil?, descricao?, esperado?: { rota?, textos?, botoes? },
  *         aPartirDe?: { cenario, codigoAluno, rota? } }
  */
 import { z } from 'zod'
 import { getSessionFromEvent } from '../../../utils/session'
 import { CadastroError, criarCenario } from '../../../utils/e2e/cadastro'
+import { valorPerfilSchema } from '../../../utils/e2e/perfilSchema'
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'use letras minúsculas, números e hífen').max(60)
 
 const esperadoSchema = z.object({
   rota: z.string().max(200).optional(),
   textos: z.array(z.string().max(200)).max(20).optional(),
-  botoes: z.array(z.string().max(200)).max(20).optional()
+  botoes: z.array(z.string().max(200)).max(20).optional(),
+  desabilitados: z.array(z.string().max(200)).max(20).optional(),
+  naoDeve: z.object({
+    textos: z.array(z.string().max(200)).max(20).optional(),
+    botoes: z.array(z.string().max(200)).max(20).optional()
+  }).optional()
 })
 
 const corpoSchema = z.object({
   id,
   titulo: z.string().trim().min(3).max(120),
-  perfil: z.record(z.string().max(60), z.union([z.string().max(200), z.number(), z.boolean(), z.null()])).optional(),
+  perfil: z.record(z.string().max(60), valorPerfilSchema).optional(),
   descricao: z.string().trim().max(300).optional(),
+  where: z.string().max(2000).optional(),
   esperado: esperadoSchema.optional(),
+  regra: z.union([z.string().max(60), z.array(z.string().max(60)).max(10)]).optional(),
   aPartirDe: z.object({
     cenario: id,
     codigoAluno: z.coerce.number().int().positive(),

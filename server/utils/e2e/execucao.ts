@@ -186,7 +186,7 @@ async function fecharResumo(id: string, alvo: string, opcoes: OpcoesExecucao): P
         id, alvo, origem: 'tela', iniciadoPor: opcoes.iniciadoPor,
         inicio: estado.iniciadoEm ?? agora, fim: agora, situacao: 'falhou',
         dispositivos: opcoes.dispositivos, cenarios: opcoes.cenarios?.length ? opcoes.cenarios : undefined,
-        total: 0, totais: { passou: 0, falhou: 0, instavel: 0, pulado: 0 }, testes: [],
+        total: 0, totais: { 'passou': 0, 'falhou': 0, 'massa-invalida': 0, 'instavel': 0, 'pulado': 0 }, testes: [],
         erros: [estado.log.slice(-15).join('\n')]
       }
   await fs.mkdir(pastaResultados(), { recursive: true })
@@ -225,16 +225,18 @@ export async function listarExecucoes(): Promise<ResumoExecucaoE2e[]> {
 }
 
 /**
- * Captura (PNG) ou trace (zip) de uma execução: só dentro de e2e/resultados/<id>/artefatos.
+ * Captura (PNG), GIF do teste ou trace (zip) de uma execução: só dentro de e2e/resultados/<id>/artefatos.
  * Devolve o caminho absoluto e o tipo, ou null se o caminho não for permitido.
  */
-const ARTEFATO = /^resultados\/(\d{8}-\d{6}-[a-z0-9-]{1,40})\/artefatos\/([^/\\]+)\/((?:test-finished|test-failed)-\d+\.png|trace\.zip)$/
+const ARTEFATO = /^resultados\/(\d{8}-\d{6}-[a-z0-9-]{1,40})\/artefatos\/([^/\\]+)\/((?:test-finished|test-failed)-\d+\.png|execucao\.gif|trace\.zip)$/
 
-export function caminhoDoArtefato(relativo: string): { caminho: string, tipo: 'image/png' | 'application/zip' } | null {
+const TIPO_ARTEFATO: Record<string, 'image/gif' | 'application/zip'> = { 'execucao.gif': 'image/gif', 'trace.zip': 'application/zip' }
+
+export function caminhoDoArtefato(relativo: string): { caminho: string, tipo: 'image/png' | 'image/gif' | 'application/zip' } | null {
   const m = relativo.match(ARTEFATO)
   if (!m || m[2] === '.' || m[2] === '..') return null
   const base = pastaResultados()
   const caminho = path.resolve(base, m[1]!, 'artefatos', m[2]!, m[3]!)
   if (!caminho.startsWith(base + path.sep)) return null
-  return { caminho, tipo: m[3] === 'trace.zip' ? 'application/zip' : 'image/png' }
+  return { caminho, tipo: TIPO_ARTEFATO[m[3]!] ?? 'image/png' }
 }

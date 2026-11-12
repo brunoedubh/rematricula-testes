@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "build:instalador": "nuxt build && node scripts/copiar-instalador.mjs",
+    "copiar:instalador": "node scripts/copiar-instalador.mjs",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

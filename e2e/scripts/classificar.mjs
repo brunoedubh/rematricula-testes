@@ -15,6 +15,15 @@ const NAO_ABRIU = [
   /\/erro\/sistemaIndisponivel/i,
 ];
 
+// Telas de "fora do período": o aluno abriu, mas a rematrícula não está aberta para ele em HML
+// (soft launch não liberado para a combinação curso/persona/campus/período do HML, ou fora do prazo).
+// Também não são o cenário (a não ser que o esperado seja justamente esta tela): próximo candidato.
+const FORA_DO_PERIODO = [
+  /\/erro\/rematriculaNaoIniciada/i,
+  /\/erro\/rematriculaSoftlaunch/i,
+  /\/ForadePrazo/i,
+];
+
 /** Rota "legível" a partir da URL final (sem o prefixo /rematricula/). */
 export function rotaDaUrl(url) {
   try {
@@ -27,13 +36,14 @@ export function rotaDaUrl(url) {
 /**
  * @param {{ esperado?: string | null, url: string }} p
  *   esperado: regex da rota (a mesma usada no teste: new RegExp(rota, 'i') contra a URL inteira).
- * @returns {{ resultado: 'confere' | 'nao-abriu' | 'outra-tela' | 'sem-esperado', rota: string }}
+ * @returns {{ resultado: 'confere' | 'nao-abriu' | 'fora-do-periodo' | 'outra-tela' | 'sem-esperado', rota: string }}
  */
 export function classificar({ esperado, url }) {
   const rota = rotaDaUrl(url);
   // A esperada vem primeiro: um cenário pode ser justamente uma tela de erro (ex.: erro-api-aluno).
   if (esperado && new RegExp(esperado, 'i').test(url)) return { resultado: 'confere', rota };
   if (NAO_ABRIU.some(r => r.test(url))) return { resultado: 'nao-abriu', rota };
+  if (FORA_DO_PERIODO.some(r => r.test(url))) return { resultado: 'fora-do-periodo', rota };
   if (!esperado) return { resultado: 'sem-esperado', rota };
   return { resultado: 'outra-tela', rota };
 }

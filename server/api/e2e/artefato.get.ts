@@ -1,6 +1,6 @@
 /**
- * GET /api/e2e/artefato?caminho=resultados/<id>/artefatos/<teste>/test-finished-1.png|trace.zip
- * Captura ou trace de uma execução da suíte (só dentro de e2e/resultados/<id>/artefatos).
+ * GET /api/e2e/artefato?caminho=resultados/<id>/artefatos/<teste>/test-finished-1.png|execucao.gif|trace.zip
+ * Captura, GIF do teste ou trace de uma execução da suíte (só dentro de e2e/resultados/<id>/artefatos).
  * O trace abre em `npx playwright show-trace <arquivo>` ou em trace.playwright.dev (roda local no navegador).
  */
 import { promises as fs } from 'node:fs'

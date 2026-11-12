@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CenarioE2e } from '~~/types'
+import type { CenarioE2e, RegraGravacaoE2e } from '~~/types'
 
 /**
  * Formulário de cenário (e2e/PLANO.md 4):
@@ -7,12 +7,17 @@ import type { CenarioE2e } from '~~/types'
  * - a-partir-de: usa a gravação de um candidato que caiu numa tela sem cenário
  * - editar: título e esperado
  * - confirmar: a-confirmar → gravado depois de conferir a captura
+ *
+ * A regra (e2e/regras/regras.mjs) diz em que tela o front DEVE parar: é ela que transforma o teste de
+ * "repete a gravação" em "segue a regra". Confirmar exige regra, e o aluno gravado precisa cair nela.
  */
 const props = defineProps<{
   aberto: boolean
   modo: ModoFormCenario
   cenario?: CenarioE2e | null
   origem?: OrigemGravacao | null
+  /** Regra que o dado da gravação (do cenário ou do candidato) aciona */
+  regraGravada?: RegraGravacaoE2e
   /** Chama a rota certa para o modo; erro sai como exceção */
   salvar: (corpo: Record<string, unknown>) => Promise<unknown>
 }>()
@@ -22,11 +27,31 @@ const form = reactive({
   id: '',
   titulo: '',
   descricao: '',
-  perfilJson: '',
+  where: '',
   rota: '',
   textos: '',
-  botoes: ''
+  botoes: '',
+  desabilitados: '',
+  naoDeveTextos: '',
+  naoDeveBotoes: '',
+  regras: [] as string[]
 })
+
+const rg = useRegrasE2e()
+onMounted(() => {
+  if (!rg.dados.value) void rg.carregar()
+})
+const opcoesRegra = computed(() => rg.regras.value.map(r => ({ label: `${r.ordem}. ${r.titulo}`, value: r.id, description: r.rota })))
+
+/** Escolheu a regra e a rota está vazia: sugere a tela da regra */
+watch(() => form.regras, (ids) => {
+  if (form.rota || ids.length !== 1) return
+  const r = rg.porId.value.get(ids[0]!)
+  if (r) form.rota = `^${sugerirRegexRota(r.rota)}$`
+})
+
+/** O aluno gravado cai numa regra que não está entre as escolhidas: o servidor recusa o confirmar */
+const regraNaoBate = computed(() => !!props.regraGravada && form.regras.length > 0 && !form.regras.includes(props.regraGravada.id))
 const idManual = ref(false)
 const salvando = ref(false)
 const erro = ref<string | null>(null)
@@ -58,10 +83,16 @@ watch(() => props.aberto, (aberto) => {
   form.id = ''
   form.titulo = c?.titulo ?? ''
   form.descricao = ''
-  form.perfilJson = ''
+  form.where = ''
   form.rota = c?.esperado?.rota ?? ''
   form.textos = (c?.esperado?.textos ?? []).join('\n')
   form.botoes = (c?.esperado?.botoes ?? []).join('\n')
+  form.desabilitados = (c?.esperado?.desabilitados ?? []).join('\n')
+  form.naoDeveTextos = (c?.esperado?.naoDeve?.textos ?? []).join('\n')
+  form.naoDeveBotoes = (c?.esperado?.naoDeve?.botoes ?? []).join('\n')
+  form.regras = [c?.regra ?? []].flat()
+  // Confirmando sem regra: a do aluno gravado é a sugestão (quem confirma decide se é a certa).
+  if (!form.regras.length && props.modo === 'confirmar' && props.regraGravada) form.regras = [props.regraGravada.id]
   if (!form.rota && rotaObservada.value) form.rota = sugerirRegexRota(rotaObservada.value)
   if (props.modo === 'a-partir-de' && props.origem) {
     form.descricao = `gravado a partir de ${props.origem.cenario} (aluno informado)`
@@ -78,7 +109,7 @@ const linhas = (texto: string) => texto.split('\n').map(l => l.trim()).filter(Bo
 const rotaNaoCasa = computed(() => {
   if (!form.rota || rotaObservada.value === undefined) return false
   try {
-    return !new RegExp(form.rota, 'i').test(`/rematricula/${rotaObservada.value}`)
+    return !new RegExp(form.rota, 'i').test(`/${rotaObservada.value.replace(/^\/+/, '')}`)
   } catch {
     return true
   }
@@ -86,25 +117,23 @@ const rotaNaoCasa = computed(() => {
 
 async function enviar() {
   erro.value = null
-  const esperado = { rota: form.rota.trim() || undefined, textos: linhas(form.textos), botoes: linhas(form.botoes) }
+  const esperado = {
+    rota: form.rota.trim() || undefined,
+    textos: linhas(form.textos),
+    botoes: linhas(form.botoes),
+    desabilitados: linhas(form.desabilitados),
+    naoDeve: { textos: linhas(form.naoDeveTextos), botoes: linhas(form.naoDeveBotoes) }
+  }
+  const regra = form.regras.length > 1 ? form.regras : (form.regras[0] ?? '')
   let corpo: Record<string, unknown>
 
   if (criando.value) {
-    let perfil: Record<string, unknown> | undefined
-    if (form.perfilJson.trim()) {
-      try {
-        perfil = JSON.parse(form.perfilJson)
-      } catch {
-        erro.value = 'Perfil não é um JSON válido'
-        return
-      }
-    }
-    corpo = { id: form.id, titulo: form.titulo, descricao: form.descricao.trim() || undefined, perfil, esperado }
+    corpo = { id: form.id, titulo: form.titulo, descricao: form.descricao.trim() || undefined, where: form.where.trim() || undefined, esperado, regra: regra || undefined }
     if (props.modo === 'a-partir-de' && props.origem) {
       corpo.aPartirDe = { cenario: props.origem.cenario, codigoAluno: props.origem.codigoAluno, rota: props.origem.rota }
     }
   } else {
-    corpo = { titulo: form.titulo, esperado, confirmar: props.modo === 'confirmar' || undefined }
+    corpo = { titulo: form.titulo, esperado, regra, confirmar: props.modo === 'confirmar' || undefined }
   }
 
   salvando.value = true
@@ -154,16 +183,39 @@ async function enviar() {
           </UFormField>
           <UFormField
             v-if="modo === 'novo'"
-            label="Perfil em colunas da view (opcional, JSON)"
-            help="Ex.: {&quot;IND_CONTRATO_LIBERADO&quot;: &quot;S&quot;, &quot;QTDE_DP_NA_MAT&quot;: &quot;>0&quot;}. Só colunas: a geração automática procura alunos com ele."
+            label="WHERE no Databricks (opcional)"
+            help="Ex.: IND_CONTRATO_LIBERADO = 'S' AND QTDE_DP_NA_MAT > 0. Com ele, a esteira procura alunos sozinha; sem ele, o cenário é manual. Dá para ajustar depois em Filtro SQL."
           >
-            <UTextarea v-model="form.perfilJson" class="w-full font-mono text-xs" :rows="2" />
+            <UTextarea v-model="form.where" class="w-full font-mono text-xs" :rows="2" spellcheck="false" />
           </UFormField>
         </template>
 
         <UFormField
+          label="Regra de tela que o cenário testa"
+          help="Em ordem de prioridade, como o front decide (GerenciadorRotasPrioritarias). O teste confere que o aluno cai nesta regra e que o front para na tela dela."
+          :required="modo === 'confirmar'"
+          :error="regraNaoBate ? `O aluno gravado cai em: ${regraGravada!.titulo} (${regraGravada!.rota})` : undefined"
+        >
+          <USelectMenu
+            v-model="form.regras"
+            :items="opcoesRegra"
+            value-key="value"
+            multiple
+            placeholder="Escolha a regra"
+            class="w-full"
+          />
+        </UFormField>
+        <p v-if="regraGravada && !regraNaoBate" class="-mt-2 text-xs text-gray-500">
+          <UIcon name="i-lucide-user-check" class="mr-0.5 align-text-bottom" />
+          O dado do aluno gravado aciona: {{ regraGravada.titulo }} → <code>{{ regraGravada.rota }}</code>
+          <template v-if="regraGravada.aplicaveis.length > 1">
+            (também valiam: {{ regraGravada.aplicaveis.slice(1).map(rg.tituloRegra).join('; ') }})
+          </template>
+        </p>
+
+        <UFormField
           label="Rota esperada"
-          :help="rotaObservada !== undefined ? `Expressão regular. A gravação parou em: ${rotaObservada || '(raiz)'}` : 'Expressão regular conferida contra a URL.'"
+          :help="rotaObservada !== undefined ? `Expressão regular no caminho do app (ex.: ^/contrato$). A gravação parou em: ${rotaObservada || '(raiz)'}` : 'Expressão regular no caminho do app (ex.: ^/contrato$).'"
           :error="rotaNaoCasa ? 'Não casa com a tela gravada' : undefined"
           :required="modo === 'confirmar'"
         >
@@ -176,6 +228,12 @@ async function enviar() {
           </UFormField>
           <UFormField label="Botões" help="Nome do botão, um por linha">
             <UTextarea v-model="form.botoes" class="w-full" :rows="3" />
+          </UFormField>
+          <UFormField label="Não pode mostrar (textos)" help="Textos de outras telas que não podem aparecer aqui">
+            <UTextarea v-model="form.naoDeveTextos" class="w-full" :rows="2" />
+          </UFormField>
+          <UFormField label="Botões desabilitados" help="Botões que precisam começar desabilitados (ex.: Aceitar contrato)">
+            <UTextarea v-model="form.desabilitados" class="w-full" :rows="2" />
           </UFormField>
         </div>
 
@@ -191,7 +249,7 @@ async function enviar() {
           type="submit"
           form="form-cenario-e2e"
           :loading="salvando"
-          :disabled="!form.titulo || (criando && !form.id) || (modo === 'confirmar' && !form.rota)"
+          :disabled="!form.titulo || (criando && !form.id) || (modo === 'confirmar' && (!form.rota || !form.regras.length || regraNaoBate))"
         >
           {{ titulos[modo].botao }}
         </UButton>

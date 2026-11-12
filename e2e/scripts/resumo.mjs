@@ -8,6 +8,10 @@ import path from 'node:path';
 const MANTER = Number(process.env.E2E_MANTER_EXECUCOES) || 30;
 
 const SITUACAO_TESTE = { expected: 'passou', unexpected: 'falhou', flaky: 'instavel', skipped: 'pulado' };
+
+const json = s => {
+  try { return s === undefined ? undefined : JSON.parse(s); } catch { return undefined; }
+};
 const SITUACAO_FIM = { passed: 'concluida', failed: 'concluida', timedout: 'interrompida', interrupted: 'interrompida' };
 
 const semCores = s => String(s ?? '').replace(/\u001b\[[0-9;]*m/g, '');
@@ -36,7 +40,7 @@ export default class ResumoReporter {
       dispositivos: [...new Set(suite.allTests().map(t => t.parent.project()?.name).filter(Boolean))],
       cenarios: process.env.E2E_CENARIOS ? process.env.E2E_CENARIOS.split(',') : undefined,
       total: suite.allTests().length,
-      totais: { passou: 0, falhou: 0, instavel: 0, pulado: 0 },
+      totais: { passou: 0, falhou: 0, instavel: 0, pulado: 0, 'massa-invalida': 0 },
       testes: [],
       erros: [],
     };
@@ -47,8 +51,10 @@ export default class ResumoReporter {
     // Com retries, só o último resultado conta.
     if (result.status !== 'passed' && result.status !== 'skipped' && result.retry < test.retries) return;
 
-    const situacao = SITUACAO_TESTE[test.outcome()] ?? 'falhou';
     const anotacao = tipo => test.annotations.filter(a => a.type === tipo).map(a => a.description);
+    let situacao = SITUACAO_TESTE[test.outcome()] ?? 'falhou';
+    // Falhou porque o aluno não é do cenário (tests/verificacao.mjs): não é defeito do front.
+    if (situacao === 'falhou' && anotacao('massa-invalida').length) situacao = 'massa-invalida';
     const anexo = nome => {
       const a = result.attachments.find(x => x.name === nome && x.path);
       return a ? path.relative(this.raiz, a.path).split(path.sep).join('/') : undefined;
@@ -62,11 +68,19 @@ export default class ResumoReporter {
       duracaoMs: Math.round(result.duration),
       rotaEsperada: anotacao('rota-esperada')[0],
       rotaObtida: anotacao('rota-obtida')[0],
+      // Tela que a regra manda (regras/regras.mjs) e por quê
+      rotaRegra: anotacao('rota-regra')[0],
+      regra: json(anotacao('regra')[0]),
+      verificacoes: json(anotacao('verificacoes')[0]) ?? [],
+      tipo: anotacao('tipo')[0] ?? (/\[[a-z0-9-]+--[a-z0-9-]+\]\s*$/.test(test.title) ? 'fluxo' : 'cenario'),
+      base: anotacao('base')[0],
+      ajuste: json(anotacao('ajuste')[0]),
       semGravacao: anotacao('sem-gravacao'),
       motivo: situacao === 'pulado' ? anotacao('skip')[0] : undefined,
       erro: result.error ? semCores(result.error.message).split('\n').slice(0, 12).join('\n') : undefined,
       captura: anexo('screenshot'),
       trace: anexo('trace'),
+      gif: anexo('gif'),
     });
     this.resumo.totais[situacao]++;
     this.salvar();

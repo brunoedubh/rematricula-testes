@@ -52,7 +52,7 @@ const logInvertido = computed(() => [...props.esteira.log].reverse())
         <ul v-if="r.tentativas.length" class="mt-1 space-y-0.5 text-xs text-gray-600 dark:text-gray-400">
           <li v-for="t in r.tentativas" :key="t.codigoAluno" class="flex flex-wrap items-center gap-2">
             <span class="font-mono">{{ t.codigoAluno }}</span>
-            <UBadge :color="RESULTADO_TENTATIVA[t.resultado].cor" variant="outline" size="xs">
+            <UBadge :color="RESULTADO_TENTATIVA[t.resultado].cor" variant="outline" size="xs" :title="AJUDA_RESULTADO[t.resultado]">
               {{ RESULTADO_TENTATIVA[t.resultado].rotulo }}
             </UBadge>
             <span v-if="t.rota !== undefined" class="font-mono">{{ t.rota || '(raiz)' }}</span>

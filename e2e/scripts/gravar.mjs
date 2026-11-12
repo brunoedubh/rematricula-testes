@@ -8,7 +8,13 @@
 // Esteira: node scripts/gravar.mjs --link <url> --saida <caminho-sem-extensao> [--esperado <regex>] [--json]
 //          O link também pode vir pela variável E2E_LINK (preferível: não aparece na lista de processos).
 //          Com --json, os logs vão para o stderr e a última linha do stdout é o resultado em JSON:
-//          { ok, url, rota, resultado, har, png, apis: [{ metodo, status, caminho }], avancos: [], erro? }
+//          { ok, url, rota, resultado, har, png, apis: [{ metodo, status, caminho }], avancos: [], aluno, regra, erro? }
+//          regra = regra de tela que vale para o dado gravado (regras/regras.mjs): { id, titulo, rota, aplicaveis }.
+//
+// --regra <id[,id]>  regra(s) que o cenário exercita. Se o aluno abriu na tela certa ou sem esperado, mas o dado
+//          dele cai em outra regra, o resultado é "outra-regra": o aluno não serve para o cenário (PLANO.md 3.5).
+//          aluno = resumo sem dados pessoais de ObterInformacoesAluno (scripts/aluno.mjs). O mesmo resultado
+//          fica anotado no HAR em log._e2e (a tela lê de lá depois que o servidor reinicia).
 //
 // --avancar auto (padrão) | nao | certificado,contrato
 //          auto = avança tudo que não for a própria tela do cenário (o --esperado casa com a rota do avanço).
@@ -19,6 +25,8 @@ import { parseArgs } from 'node:util';
 import { lerEnv } from './env.mjs';
 import { classificar } from './classificar.mjs';
 import { avancosPara, aplicarAvancos, ENDPOINT_INFORMACOES, AVANCOS } from './avancos.mjs';
+import { resumoDoHar } from './aluno.mjs';
+import { avaliarHar } from '../regras/regras.mjs';
 
 const { values: op, positionals } = parseArgs({
   allowPositionals: true,
@@ -26,6 +34,7 @@ const { values: op, positionals } = parseArgs({
     link: { type: 'string' },
     saida: { type: 'string' },
     esperado: { type: 'string' },
+    regra: { type: 'string' },
     avancar: { type: 'string', default: 'auto' },
     json: { type: 'boolean', default: false },
   },
@@ -55,6 +64,7 @@ if (op.link || process.env.E2E_LINK) {
   if (!op.esperado) {
     const c = JSON.parse(fs.readFileSync('cenarios/catalogo.json', 'utf8')).cenarios.find(x => x.id === id);
     op.esperado = c?.esperado?.rota;
+    if (!op.regra && c?.regra) op.regra = [].concat(c.regra).join(',');
   }
 }
 
@@ -123,15 +133,33 @@ try {
 }
 await browser.close();
 
-const { resultado, rota } = classificar({ esperado: op.esperado || null, url });
+let { resultado, rota } = classificar({ esperado: op.esperado || null, url });
 log('Tela final:', rota.startsWith('autorizacao') ? '(não saiu da autorização)' : rota, `→ ${resultado}`);
 const avancos = [...avancados];
-if (avancos.length) {
-  log('Avançou:', avancos.join(', '));
-  // Anota no próprio HAR (campo próprio, permitido pela especificação com "_"): quem promover a gravação sabe que houve avanço.
+if (avancos.length) log('Avançou:', avancos.join(', '));
+
+// Anota no próprio HAR (campos próprios com "_", permitidos pela especificação): quem promover a gravação
+// sabe que houve avanço, e a tela mostra rota, resultado e aluno mesmo depois de o servidor reiniciar.
+let aluno = null;
+let regra = null;
+try {
   const conteudo = JSON.parse(fs.readFileSync(har, 'utf8'));
-  conteudo.log._avancos = avancos;
+  aluno = resumoDoHar(conteudo);
+  const r = avaliarHar(conteudo);
+  regra = { id: r.regra.id, titulo: r.regra.titulo, rota: r.rota, aplicaveis: r.aplicaveis.map(x => x.id) };
+  const declaradas = (op.regra ?? '').split(',').map(x => x.trim()).filter(Boolean);
+  if (declaradas.length && ['confere', 'sem-esperado'].includes(resultado) && !declaradas.includes(regra.id)) {
+    log(`Regra do aluno: ${regra.titulo} (${regra.id}); o cenário pede ${declaradas.join(' ou ')} → outra-regra`);
+    resultado = 'outra-regra';
+  }
+  if (avancos.length) conteudo.log._avancos = avancos;
+  conteudo.log._e2e = { gravadoEm: new Date().toISOString(), rota, resultado, esperado: op.esperado || null, avancos, aluno, regra };
   fs.writeFileSync(har, JSON.stringify(conteudo));
+} catch (e) {
+  log('Aviso: não foi possível anotar o HAR:', e.message);
+}
+if (aluno) {
+  log('Aluno no HML:', `período ${aluno.periodoLetivo} (${aluno.codigoPeriodoLetivo}), curso ${aluno.codigoCurso}, persona ${aluno.persona}, soft launch: ${aluno.estaNoSoftLaunch ? 'sim' : 'não'}`);
 }
 
 if (manual) {
@@ -141,4 +169,4 @@ if (manual) {
   fs.writeFileSync(arq, JSON.stringify(alunos, null, 2) + '\n');
   console.log(`Gravado: ${har}. Atualize cenarios/catalogo.json (status "gravado" e "esperado"${avancos.length ? `; "avancos": ${JSON.stringify(avancos)}` : ''}).`);
 }
-if (op.json) console.log(JSON.stringify({ ok: true, url: url.replace(/\/token\/.*/, '/token/…'), rota, resultado, har, png, apis, avancos }));
+if (op.json) console.log(JSON.stringify({ ok: true, url: url.replace(/\/token\/.*/, '/token/…'), rota, resultado, har, png, apis, avancos, aluno, regra }));

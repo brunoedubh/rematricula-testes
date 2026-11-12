@@ -44,7 +44,7 @@ Nuxt 4 full-stack app — frontend and server API in the same project. UI built 
 - `/login` — Public login page (layout: `auth`)
 - `/app` — Busca de Alunos (`DashAlunos` component)
 - `/app/alunos` — Busca de Alunos e geração de tokens (`DashAlunos` component)
-- `/app/cenarios` — Cenários E2E: cobertura do catálogo, alunos não encontrados e execução da suíte (`app/components/app/e2e/`, ver `e2e/PLANO.md`)
+- `/app/cenarios` — Cenários E2E, abas: **Cenários** (catálogo em `CenariosLista.vue` + visão "Precisam de ação" em `CenariosPendentes.vue`: informar aluno, conferir tela), **Cobertura** (cobertura por regra de tela + combinações, `RegrasTab.vue`), **Massa de teste** e **Execução** (`app/components/app/e2e/`, ver `e2e/PLANO.md`). Tests check the screen against the rule oracle (`e2e/regras/regras.mjs`, PLANO 3.5), not only against the recording
 
 ### Authentication flow
 
@@ -101,15 +101,19 @@ Sessions are stored in a `Map<string, SessionUser>` in `server/utils/session.ts`
 | GET  | `/api/pendencias/alunos` | Top 200 students with pending issues (sorted by count) |
 | GET  | `/api/e2e/cenarios` | E2E catalog + recordings per scenario + pipeline state |
 | POST | `/api/e2e/cenarios` | New E2E scenario (optionally from a candidate recording) |
-| PATCH | `/api/e2e/cenarios/:id` | Edit title/expected; confirm `a-confirmar` → `gravado` |
+| PATCH | `/api/e2e/cenarios/:id` | Edit title/`where` (raw SQL filter, validated by `server/utils/e2e/where.ts`)/expected; confirm `a-confirmar` → `gravado` |
+| POST | `/api/e2e/cenarios/:id/descartar` | Discard a student from a scenario (deletes recording, excluded from future SQL) or allow again (`restaurar`) |
+| POST | `/api/e2e/filtro` | SQL preview of a WHERE; with `contar`, count + sample in Databricks |
 | POST | `/api/e2e/gerar` | Start E2E generation pipeline in background (HML only) |
 | POST | `/api/e2e/gravar` | Record a given student for a scenario (HML only) |
 | GET  | `/api/e2e/captura` | Screenshot PNG from `e2e/gravacoes` |
+| GET  | `/api/e2e/massa` | Test data: student code used per scenario + candidates tried, with HML period/course/soft launch (no PII) |
+| GET  | `/api/e2e/regras` | Screen rules in priority order (oracle `e2e/regras/regras.mjs`, mirrors the front's `GerenciadorRotasPrioritarias`), rule combinations (`e2e/cenarios/combinacoes.json`) and last run, for coverage per rule |
 | GET  | `/api/e2e/execucoes` | Targets, running state and history of suite runs (`e2e/resultados/*.json`) |
 | POST | `/api/e2e/execucoes` | Run the Playwright suite in background (no credentials; target + devices + scenarios) |
 | GET  | `/api/e2e/execucoes/:id` | One run's result per scenario × device |
 | POST | `/api/e2e/execucoes/cancelar` | Stop the running suite |
-| GET  | `/api/e2e/artefato` | Screenshot or trace of a run (`e2e/resultados/<id>/artefatos`) |
+| GET  | `/api/e2e/artefato` | Screenshot, GIF or trace of a run (`e2e/resultados/<id>/artefatos`) |
 
 ### URL pattern for generated links
 

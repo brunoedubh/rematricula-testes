@@ -5,7 +5,7 @@
 | **O que é** | Projeto de testes de tela da jornada do aluno: gera cenários a partir do Databricks, grava cenários reais do HML, reproduz sem backend e mostra o resultado numa tela |
 | **Por que separado** | Serve à migração Vue 3 (card #483734), mas também a qualquer card futuro do front e à regressão de cada publicação |
 | **Onde fica** | Subpasta `e2e/` do `rematricula-testes`, com `package.json` próprio. A tela "Cenários E2E" (geração, alunos não encontrados, execução) fica no Nuxt do mesmo repositório |
-| **Hoje** | **5 cenários + 2 fluxos com escrita × 2 dispositivos = 14 testes verdes** contra o Vue 2 de HML. Etapas 1, 2, 4 e 5 com código pronto (2, 4 e 5 ainda precisam ser usadas com login/HML); etapa 6 iniciada (aceite do contrato) |
+| **Hoje** | **5 cenários + 10 combinações de regras + 2 fluxos com escrita × 2 dispositivos = 34 testes verdes** contra o Vue 2 de HML, conferidos contra as regras de tela do front (3.5). Etapas 1, 2, 4 e 5 com código pronto (2, 4 e 5 ainda precisam ser usadas com login/HML); etapa 6 iniciada (aceite do contrato) |
 | **Plano principal** | `refatoracao-rematricula/refatoracao-frontend/PLANO.md` |
 
 ---
@@ -71,8 +71,10 @@ Indicadores da `sb_jira.wv_alunos_rem` × regras do front (`GerenciadorRotasPrio
 
 | Indicador | Regra no front | Cenário |
 |---|---|---|
-| `IND_REG_FINANCEIRO` | `possuiPendenciasFinanceiras` | pendência financeira |
+| `IND_CONTRATO_LIBERADO = 'N'` | `!contratoEstaLiberado` (e `possuiPendenciasFinanceiras`) | pendência financeira |
 | `IND_CONTRATO_LIBERADO` / `IND_CONTRATO_ASSINADO` | `contratoEstaLiberado` / `contratoEstaAceito` | contrato |
+
+> **Pendência financeira = contrato não liberado.** A API calcula `possuiPendenciasFinanceiras = !contratoEstaLiberado && !IND_REG_FINANCEIRO` (`servico-rematricula`, `ObterInformacoesAlunoService.ComporInformacoesFinanceiras`): com contrato liberado ela é sempre falsa, e quem libera o contrato é o financeiro. `IND_REG_FINANCEIRO` sozinho (débito) não leva à tela. Por isso combinação com pendência financeira e contrato liberado é dado impossível: o oráculo avisa (`inconsistencias`) e `regras.test.mjs` recusa a combinação.
 | `IND_MEDICINA` | grupo de curso Medicina | telas de Medicina |
 | `IND_OFERTA_UCDP` / `IND_CONFIRMADO_UCDP` | `possuiEscolhaUcPersonalizavel` | UC personalizável |
 | `IND_OFERTA_CORE` / `IND_CONFIRMADO_CORE` | `possuiEscolhaCoreCurriculum` | core curriculum |
@@ -137,8 +139,9 @@ Roda no servidor Nuxt (`server/utils/e2e/esteira.ts`), um cenário por vez, com 
 6. **Classifica pela tela real** (`classificar.mjs`). Quem define o cenário é a rota onde o app parou, não o indicador.
    - rota = `esperado.rota` → `gravado`;
    - não saiu da autorização / erro de aluno inexistente / rota diferente → próximo candidato (que pode ser outra combinação e exigir outro `liberar`);
+   - **fora do período** (`erro/rematriculaNaoIniciada`, `erro/rematriculaSoftlaunch`, `ForadePrazo`, a não ser que seja a tela esperada) → resultado `fora-do-periodo`, nunca aprovado como `a-confirmar` (ver 3.3.2);
    - candidatos esgotados com alguma rota diferente → `divergente` (com as rotas observadas);
-   - nenhum candidato abriu → `nao-encontrado` (vai para a parte ②);
+   - nenhum candidato chegou numa tela da jornada (não abriu ou fora do período) → `nao-encontrado`, com `observado.motivo` (vai para a parte ②);
    - cenário **sem `esperado.rota`** e o aluno abriu → `a-confirmar`: a gravação é guardada e alguém confere a tela (`observado.rota`) e preenche o `esperado`.
    - Cenário já `gravado` (ou `a-confirmar`) não perde a gravação quando uma nova tentativa não confirma.
    - Os candidatos gravam em `gravacoes/candidatos/<id>--<aluno>.*`; só o aprovado vai para `gravacoes/<id>.har`.
@@ -157,6 +160,55 @@ Roda no servidor Nuxt (`server/utils/e2e/esteira.ts`), um cenário por vez, com 
 - **Validado em HML (11/11/2026):** o aluno do `escolha-disciplinas` (antes parado em `envioCertificado`) chegou em `alteracaoresumo` com 10 chamadas reais; a reprodução sem backend chegou na mesma tela sem nenhuma chamada `sem-gravacao`.
 - **Atenção:** nessa tela, o próprio front faz um `POST compraonline/.../Matricula/{aluno}/Carregamento` ao abrir (sem clique). Isso já acontecia com qualquer aluno que chega lá, mas não é "só leitura" no sentido estrito. Se for problema, bloquear esse POST no gravador e servir a resposta gravada uma vez.
 - Pendência financeira **não** é avançada: é tela de cenário e tem filtro próprio no perfil (`IND_REG_FINANCEIRO`). Novo avanço = um item em `AVANCOS`.
+
+### 3.3.2 Fora do período e massa de teste (11/11/2026)
+**Problema visto na tela:** `escolha-disciplinas` virou `a-confirmar` e os 5 candidatos de `medicina-contrato` tinham a mesma captura. Todos pararam em `erro/rematriculaNaoIniciada` ("Estamos fora do período de rematrícula"), com `estaNoSoftLaunch: false` no `ObterInformacoesAluno`. O classificador aceitava essa tela como "abriu, sem esperado".
+
+**Causa:** a liberação usa curso/persona/campus/período **da view** (foto de produção D-1), mas o HML devolve outro período para esses alunos (ex.: Medicina em 13168–13170, `escolha-disciplinas` em 13085). A combinação liberada não é a do aluno no HML.
+
+**O que mudou:**
+- `classificar.mjs`: resultado `fora-do-periodo` (testes em `classificar.test.mjs`).
+- `gravar.mjs` + `scripts/aluno.mjs`: resumo do aluno **sem dados pessoais** (período, curso, persona, instituição, campus, soft launch, pendência financeira, contrato, bloqueios) no JSON de saída e anotado no HAR em `log._e2e` (com rota e resultado). A tela lê isso, então rota e resultado dos candidatos sobrevivem ao reinício do servidor (antes: 7.2, limitação 3).
+- Esteira: candidato `fora-do-periodo` com `estaNoSoftLaunch: false` e combinação do HML diferente da view → libera a combinação do HML (campus da view, o HML não devolve o código) e grava de novo uma vez. Restaurada no `finally` como as outras. `observado.motivo` resume por que nenhum candidato serviu.
+- Tela: aba **Massa de teste** (`GET /api/e2e/massa`, `MassaTab.vue`): aluno usado em cada cenário + candidatos tentados, com resultado, tela, período/curso/persona/soft launch do HML, captura, copiar código e CSV. Rótulos dos status mais claros ("Conferir tela", "Sem aluno", "Outra tela") e ajuda em cada resultado.
+- Dados corrigidos: a gravação de `escolha-disciplinas` voltou para `candidatos/` e o cenário ficou `nao-encontrado`; `medicina-contrato` passou de `divergente` para `nao-encontrado`. HARs antigos receberam `_e2e` retroativo (`retroativo: true`; rota só onde dava para saber).
+
+**Achados para revisar o catálogo:** os 5 candidatos de `pendencia-financeira` vinham com `possuiPendenciasFinanceiras: false` no HML porque o perfil filtrava `IND_REG_FINANCEIRO = 'N'` com contrato liberado (resolvido: o perfil agora é `IND_CONTRATO_LIBERADO = 'N'`); em `uc-personalizavel` (6346398, 6606555) e `core-curriculum` (6926550) o HML diz que a escolha está pendente, mas o app parou em `alteracaoresumo`/`preVisualizacaoGrade`: conferir se `UcPersonalizavel`/`CoreCurriculum` só aparece depois de um clique (aí a gravação só leitura nunca chega lá e o `esperado.rota` precisa mudar).
+
+### 3.3.3 Descartar aluno e editar o filtro SQL (11/11/2026)
+A view é de produção e o HML é copiado na segunda: o filtro às vezes acerta, às vezes não, e quem decide é a captura.
+- **Descartar:** na captura (botão "Descartar este aluno"), na aba Massa de teste e na aba Não encontrados. `POST /api/e2e/cenarios/:id/descartar` apaga a gravação do aluno (aprovado: `gravacoes/<id>.*`, sai do `alunos.local.json` e o cenário volta a `a-gravar`; candidato: `gravacoes/candidatos/<id>--<aluno>.*`) e grava o código em `cenarios/descartados.local.json` (fora do git), com quem, quando e o motivo. A esteira inclui `COD_ALUNO NOT IN (…)` no SQL do cenário. O modal oferece "procurar outro aluno agora" (roda a esteira para o cenário). "Permitir" na Massa de teste tira o código da lista.
+- **Filtro SQL (WHERE puro):** botão de banco de dados na Cobertura e "Ver / editar filtro SQL" em Não encontrados abrem o WHERE do cenário (o campo `where` do catálogo, ou o montado a partir das colunas do perfil antigo), o SQL exato que a esteira roda com prévia a cada alteração, a lista de colunas da view com o significado (clique insere um exemplo) e "Contar alunos" (`POST /api/e2e/filtro`, só leitura: total + amostra). "Salvar e gerar" grava (`PATCH { where }`) e roda a esteira.
+- **Por que o WHERE é validado:** o projeto monta o SQL concatenando texto. `server/utils/e2e/where.ts` aceita só colunas de `COLUNAS_VIEW_E2E` (`types/e2e.ts`, a mesma lista da tela), números, textos entre aspas simples, `= <> != < > <= >=`, `AND OR NOT IN IS NULL LIKE BETWEEN`, `LOWER UPPER TRIM` e parênteses. `;`, comentários, `SELECT`, outra tabela ou barra invertida são recusados com a posição.
+- **Manual → Databricks:** cenário manual que ganha um WHERE vira `fonte: databricks`; as chaves de coluna do perfil saem e ficam só as descritivas (ex.: `softLaunch`). "Remover WHERE" volta ao perfil (manual se não houver colunas). Cenário com `softLaunch: "fora"` é gravado sem liberar também na geração automática.
+- O perfil antigo (JSON com colunas) continua funcionando enquanto o cenário não ganha um WHERE; aceita listas (`[13064, 13082]` → `IN`, `["!", 13064]` → `NOT IN`).
+
+### 3.5 Regras de tela: o teste confere a regra, não só a gravação (11/11/2026)
+**Problema:** o teste conferia se o front parava na mesma tela da gravação, e o "confirmar" de um `a-confirmar` só aceitava a rota que a gravação viu. "Passou" queria dizer "o front repetiu o que fez", não "o front seguiu a regra". Também não se conferia se o aluno gravado era mesmo do cenário (a view é de produção D-1; o HML é outro).
+
+**Oráculo (`e2e/regras/regras.mjs`):** as regras do `GerenciadorRotasPrioritarias.ts` (+ desvio de endereço do contrato e redirects do `router.ts`) em ordem de prioridade, escritas de novo e separadas do front. Dado o `ObterInformacoesAluno` gravado (e as disciplinas, para a pré-visualização da grade), diz a tela final, a regra que decidiu, as que também valiam e os campos lidos. Tabela de decisão em `regras/regras.test.mjs` (`npm run test:unidade`). **Se o front mudar a ordem ou uma condição, este arquivo muda junto** (é a especificação).
+
+**Catálogo:** cada cenário declara `regra` (id, ou lista). `esperado` ganhou `desabilitados` e `naoDeve { textos, botoes }`; `rota` passa a ser conferida no caminho relativo ao app (`^/contrato$`), não na URL inteira.
+
+**Teste (`tests/verificacao.mjs`):** cada conferência vira um item em `verificacoes` no resultado:
+1. **massa:** o dado gravado cai na regra do cenário? Se não, o resultado é **massa inválida** (problema do aluno, não do front);
+2. **catalogo:** o esperado do catálogo concorda com a regra?
+3. **regra:** o front parou na tela que a regra manda?
+4. **rota, textos, botões, desabilitados, não deve:** o que o catálogo pede;
+5. **api:** chamadas sem resposta gravada (ressalva, não reprova).
+
+**Combinações (`cenarios/combinacoes.json`, `tests/combinacoes.spec.mjs`):** o aluno com duas ou mais condições (certificado + contrato, contrato + financeiro, fora do prazo + contrato, Medicina…). Reaproveita a gravação de um cenário (`base`) e ajusta campos do `ObterInformacoesAluno` (`ajuste`): testa a prioridade entre regras com dado montado, sem precisar achar esse aluno no HML.
+
+**Esteira:** `gravar.mjs --regra` avalia o aluno gravado; se ele abriu mas cai em outra regra, o resultado é `outra-regra` e a esteira passa ao próximo candidato. O HAR guarda a regra em `log._e2e.regra`. Confirmar um `a-confirmar` exige regra, e o aluno gravado precisa cair nela.
+
+**Tela:** aba **Regras** (`GET /api/e2e/regras`): tabela de decisão, cobertura por regra (aluno real / só dado montado / sem gravação / sem teste) e o resultado da última execução. Aba **Execução**: placar de verificações, tela da regra × obtida e o detalhe "por que passou" (regra, campos do aluno, regras que perderam pela prioridade, cada verificação). Cobertura, Massa e Não encontrados mostram a regra que o aluno gravado aciona.
+
+**Achados da primeira execução (11/11/2026):**
+- `/erro/rematriculaSoftlaunch` é redirecionada pelo router para `/erro/rematriculaNaoIniciada`: o esperado de `rematricula-nao-iniciada` estava errado (corrigido).
+- `uc-personalizavel` e `core-curriculum` "divergentes": pela regra, escolha pendente **com disciplina confirmada** vai para `/preVisualizacaoGrade`, que vem antes. O front está certo; falta um aluno **sem** disciplina confirmada.
+- Medicina, assinatura digital: o front chama `contratos/alunos/<codigo>%20%20%20%20/periodos-letivos` (código com 4 espaços na URL). Investigar no front.
+- Contrato: a área do PDF aparece vazia na captura da gravação, e o teste antigo passava assim mesmo. Hoje o teste confere textos, botão e "Aceitar contrato" desabilitado antes do aceite; o PDF ainda não é conferido.
+- `beforeEach.ts` compara `to.path.toLowerCase() === '/pendenciasAcademica'` (com maiúsculas): nunca é verdadeiro.
 
 ### 3.4 Anonimizador (adiado)
 > **Adiado (11/11/2026):** hoje só 2 ou 3 pessoas do time usam a ferramenta, e as gravações ficam fora do git (`gravacoes/` está no `.gitignore`). Fazer **antes** de versionar gravações, levar o repositório ao Azure Repos ou ligar ao pipeline do front (etapa 8). Até lá, a esteira grava direto em `gravacoes/` e o passo 8 da 3.3 não anonimiza. Para não fechar a porta: a gravação aprovada passa por um ponto único (`promoverGravacao` em `server/utils/e2e/esteira.ts`), que hoje só move o arquivo; o anonimizador entra ali depois.
@@ -203,6 +255,7 @@ Na tela, aba **"Execução"**:
 - **Alvos:** HML = `URL_BASE_HML`, DEV = `URL_BASE_DEV`, local = `E2E_ALVO_LOCAL` (padrão `http://localhost:5173/rematricula/`, confirmar porta e base do Vue 3). Sem URL livre na tela.
 - **Servidor:** `server/utils/e2e/execucao.ts` roda `node e2e/node_modules/@playwright/test/cli.js test` como processo filho **sem os segredos do Nuxt no ambiente** (Databricks, soft launch, Azure, sessão). Trava própria; não roda junto com a esteira (ela move arquivos em `gravacoes/`), e a esteira também recusa rodar durante uma execução. Cancelar usa `taskkill /T` no Windows para levar junto workers e navegadores.
 - **Trace:** baixado pela tela; abre com `npx playwright show-trace` ou em trace.playwright.dev (processa no próprio navegador).
+- **GIF do teste realizado:** além da captura final, cada teste gera `artefatos/<teste>/execucao.gif` (fixture automática em `tests/gif.mjs`). O ffmpeg do Playwright não gera GIF, então os quadros vêm do screencast do Chromium (CDP) e o GIF é montado em JS (`jpeg-js` + `gifenc`): até 120 quadros, 800px no máximo, última tela segura 2s. Só em Chromium (os dois dispositivos são); desliga com `E2E_GIF=0`; se falhar, o teste segue sem GIF. Na aba Execução, botão de filme ao lado da captura.
 
 A mesma suíte roda sem a tela: `cd e2e && npm test` local e no pipeline do front (`resources.repositories` com o `rematricula-testes` + `vite preview` + `ALVO` local). O pipeline publica o `resultados/*.json` e o relatório do Playwright como artefato; a tela pode ler de lá.
 

@@ -14,6 +14,9 @@ REM Define a porta
 set PORT=3001
 set HOST=localhost
 
+REM Pasta dos testes E2E (catalogo, scripts e Playwright) ao lado deste arquivo
+set E2E_DIR=%~dp0e2e
+
 REM Verifica se a porta já está em uso
 netstat -ano | findstr ":%PORT%" >nul
 if %ERRORLEVEL% EQU 0 (

@@ -4,7 +4,7 @@
 // é montada aqui, no formato real (tirado do controller do backend ou de uma captura com aluno de teste),
 // e o teste confere o que o front faz com ela. Nada sai para fora: o que não está gravado nem respondido
 // aqui é abortado pelo reprodutor.
-import { test } from '@playwright/test';
+import { test } from './gif.mjs';
 import fs from 'node:fs';
 import { abrirComGravacao, chave, corsDe, rotaRelativa } from './apoio.mjs';
 

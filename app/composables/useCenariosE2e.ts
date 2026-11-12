@@ -121,6 +121,18 @@ export function useCenariosE2e() {
     return r.cenario
   }
 
+  /** Descarta o aluno do cenário (apaga a gravação e exclui o código do sorteio da esteira). */
+  async function descartar(id: string, codigoAluno: number, motivo?: string): Promise<void> {
+    await $fetch(`/api/e2e/cenarios/${id}/descartar`, { method: 'POST', body: { codigoAluno, motivo } })
+    await carregar()
+  }
+
+  /** Tira o aluno da lista de descartados (a esteira pode sorteá-lo de novo). */
+  async function permitir(id: string, codigoAluno: number): Promise<void> {
+    await $fetch(`/api/e2e/cenarios/${id}/descartar`, { method: 'POST', body: { codigoAluno, restaurar: true } })
+    await carregar()
+  }
+
   onMounted(async () => {
     await carregar()
     if (rodando.value) acompanhar()
@@ -130,6 +142,6 @@ export function useCenariosE2e() {
   return {
     dados, cenarios, esteira, carregando, erro, ocupado, rodando,
     senhaPedida, responderSenha,
-    carregar, gerar, gravar, criar, alterar
+    carregar, gerar, gravar, criar, alterar, descartar, permitir
   }
 }

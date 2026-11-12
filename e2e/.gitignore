@@ -2,6 +2,7 @@
 .env.local
 gravacoes/
 cenarios/alunos.local.json
+cenarios/descartados.local.json
 
 # Gerados
 node_modules/

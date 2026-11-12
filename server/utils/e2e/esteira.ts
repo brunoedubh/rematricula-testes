@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type {
+  AlunoHmlE2e,
   CenarioE2e,
   EstadoEsteiraE2e,
   ResultadoCenarioE2e,
@@ -13,7 +14,7 @@ import { findE2eCandidates } from '../../repositories/databricksRepository'
 import { lerEscopo, releaseStudent, restaurarEscopo } from '../../repositories/softLaunchRepository'
 import { getOrRefreshToken } from '../azure-token'
 import { buildAccessUrl } from '../url-builder'
-import { atualizarCenario, lerCatalogo, pastaE2e, perfilParaWhere, registrarAlunoLocal } from './catalogo'
+import { atualizarCenario, condicoesDoCenario, lerCatalogo, lerDescartados, pastaE2e, registrarAlunoLocal } from './catalogo'
 import { gravarComLink } from './processo'
 import { PASTA_CANDIDATOS } from './arquivos'
 import { execucaoRodando } from './execucao'
@@ -172,43 +173,88 @@ interface OpcoesCenario {
   alunosNoPerfil?: number
 }
 
-async function tentarCandidato(
-  cenario: CenarioE2e,
-  candidato: CandidatoE2e,
-  op: OpcoesCenario
-): Promise<{ tentativa: TentativaE2e, har?: string }> {
-  const codigoAluno = candidato.COD_ALUNO
-
-  if (op.liberar) {
-    if (candidato.COD_TPO_PERSONA === null) {
-      return { tentativa: { codigoAluno, resultado: 'pulado', motivo: 'sem persona: o liberar exige persona' } }
-    }
-    await op.liberacoes.garantir({
-      curso: candidato.COD_CURSO,
-      persona: candidato.COD_TPO_PERSONA,
-      campus: candidato.COD_CAMPUS,
-      periodo: candidato.COD_PERIODO_LETIVO
-    })
-  }
-
+async function gerarLink(op: OpcoesCenario, codigoAluno: number): Promise<string> {
   const token = await getOrRefreshToken(op.credenciais.email, 'hml', op.credenciais.password)
   if (!token.success || !token.access_token || !token.refresh_token) {
     throw new Error(token.requiresPassword
       ? 'Token de HML venceu e não deu para renovar: informe a senha e rode de novo.'
       : `Token de HML: ${token.error || 'não gerado'}`)
   }
-  const link = buildAccessUrl('hml', token.access_token, token.refresh_token, String(codigoAluno))
-  console.log(`[AUDIT] ${op.credenciais.email} (e2e) gravou aluno ${codigoAluno} em HML para o cenário ${cenario.id}`)
+  return buildAccessUrl('hml', token.access_token, token.refresh_token, String(codigoAluno))
+}
 
+/**
+ * Combinação que o HML usa para o soft launch deste aluno, quando difere da que foi liberada.
+ * A view do Databricks é a foto de produção (D-1): o período letivo (e às vezes o curso ou a persona)
+ * do HML pode ser outro, e aí a liberação feita com os dados da view não vale para o aluno, que cai em
+ * "Estamos fora do período de rematrícula". O HML não devolve o código do campus: usa o da view.
+ */
+function combinacaoDoHml(liberada: Combinacao, aluno: AlunoHmlE2e | null | undefined): Combinacao | null {
+  if (!aluno || aluno.estaNoSoftLaunch !== false) return null
+  if (aluno.codigoCurso === null || aluno.persona === null || aluno.codigoPeriodoLetivo === null) return null
+  const hml: Combinacao = { curso: aluno.codigoCurso, persona: aluno.persona, campus: liberada.campus, periodo: aluno.codigoPeriodoLetivo }
+  const igual = hml.curso === liberada.curso && hml.persona === liberada.persona && hml.periodo === liberada.periodo
+  return igual ? null : hml
+}
+
+const descreverCombinacao = (c: Combinacao) => `curso ${c.curso}, persona ${c.persona}, campus ${c.campus}, período ${c.periodo}`
+
+async function tentarCandidato(
+  cenario: CenarioE2e,
+  candidato: CandidatoE2e,
+  op: OpcoesCenario
+): Promise<{ tentativa: TentativaE2e, har?: string }> {
+  const codigoAluno = candidato.COD_ALUNO
+  const liberada: Combinacao = {
+    curso: candidato.COD_CURSO,
+    persona: candidato.COD_TPO_PERSONA ?? 0,
+    campus: candidato.COD_CAMPUS,
+    periodo: candidato.COD_PERIODO_LETIVO
+  }
+
+  if (op.liberar) {
+    if (candidato.COD_TPO_PERSONA === null) {
+      return { tentativa: { codigoAluno, resultado: 'pulado', motivo: 'sem persona: o liberar exige persona' } }
+    }
+    await op.liberacoes.garantir(liberada)
+  }
+
+  console.log(`[AUDIT] ${op.credenciais.email} (e2e) gravou aluno ${codigoAluno} em HML para o cenário ${cenario.id}`)
   const saida = `${PASTA_CANDIDATOS}/${cenario.id}--${codigoAluno}`
-  const g = await gravarComLink(link, saida, cenario.esperado?.rota)
+  let g = await gravarComLink(await gerarLink(op, codigoAluno), saida, cenario.esperado?.rota, cenario.regra)
   if (!g.ok || !g.resultado) {
     return { tentativa: { codigoAluno, resultado: 'falhou', motivo: g.erro } }
   }
-  registrar(`${cenario.id}: aluno ${codigoAluno} → ${g.rota || '(raiz)'} [${g.resultado}]`)
+
+  // Caiu em "fora do período" porque o HML usa outra combinação: libera a do HML e grava de novo (uma vez).
+  let motivo: string | undefined
+  if (g.resultado === 'fora-do-periodo' && op.liberar) {
+    const hml = combinacaoDoHml(liberada, g.aluno)
+    if (hml) {
+      registrar(`${cenario.id}: aluno ${codigoAluno} fora do período; a view tem ${descreverCombinacao(liberada)}, o HML usa ${descreverCombinacao(hml)}. Liberando a do HML e gravando de novo.`)
+      try {
+        await op.liberacoes.garantir(hml)
+        const segunda = await gravarComLink(await gerarLink(op, codigoAluno), saida, cenario.esperado?.rota, cenario.regra)
+        if (segunda.ok && segunda.resultado) g = segunda
+        if (g.resultado === 'fora-do-periodo') motivo = `continua fora do período mesmo liberando a combinação do HML (${descreverCombinacao(hml)})`
+      } catch (e) {
+        motivo = `não deu para liberar a combinação do HML (${descreverCombinacao(hml)}): ${e instanceof Error ? e.message : e}`
+      }
+    } else if (g.aluno?.estaNoSoftLaunch === false) {
+      motivo = `fora do soft launch no HML mesmo com a combinação liberada (${descreverCombinacao(liberada)})`
+    } else {
+      motivo = 'a rematrícula não está aberta para este aluno em HML'
+    }
+  }
+
+  if (g.resultado === 'outra-regra' && g.regra) motivo = `o dado do aluno cai na regra "${g.regra.titulo}", não na do cenário`
+  registrar(`${cenario.id}: aluno ${codigoAluno} → ${g.rota || '(raiz)'} [${g.resultado}]${motivo ? ` — ${motivo}` : ''}`)
   const avancos = g.avancos?.length ? g.avancos : undefined
   if (avancos) registrar(`${cenario.id}: aluno ${codigoAluno} avançou ${avancos.join(', ')}`)
-  return { tentativa: { codigoAluno, resultado: g.resultado, rota: g.rota, png: g.png, avancos }, har: g.har }
+  return {
+    tentativa: { codigoAluno, resultado: g.resultado!, rota: g.rota, png: g.png, avancos, motivo, aluno: g.aluno ?? undefined, regra: g.regra ?? undefined },
+    har: g.har
+  }
 }
 
 async function processarCenario(
@@ -234,6 +280,7 @@ async function processarCenario(
   const hoje = new Date().toISOString().slice(0, 10)
   const geradoPor = op.credenciais.email.split('@')[0]
   const rotasDiferentes = [...new Set(tentativas.filter(t => t.resultado === 'outra-tela').map(t => t.rota ?? ''))]
+  const motivo = motivoSemAluno(tentativas)
 
   let status: StatusCenarioE2e
   if (aprovado?.tentativa.resultado === 'confere') status = 'gravado'
@@ -267,7 +314,7 @@ async function processarCenario(
     } else if (status === 'divergente') {
       c.observado = { em: hoje, rotas: rotasDiferentes }
     } else {
-      c.observado = { em: hoje }
+      c.observado = { em: hoje, motivo }
     }
   })
 
@@ -279,6 +326,27 @@ async function processarCenario(
     alunosNoPerfil: op.alunosNoPerfil,
     tentativas
   }
+}
+
+/** Resumo, para a tela, de por que nenhum candidato serviu. */
+function motivoSemAluno(tentativas: TentativaE2e[]): string | undefined {
+  if (!tentativas.length) return 'nenhum aluno da view tem este perfil'
+  const conta = (r: TentativaE2e['resultado']) => tentativas.filter(t => t.resultado === r).length
+  const partes: string[] = []
+  const fora = conta('fora-do-periodo')
+  if (fora) partes.push(`${fora} fora do período de rematrícula em HML (soft launch não valeu para o aluno)`)
+  const naoAbriu = conta('nao-abriu')
+  if (naoAbriu) partes.push(`${naoAbriu} não abriram (aluno inexistente no HML ou erro)`)
+  const falhou = conta('falhou')
+  if (falhou) partes.push(`${falhou} com falha na gravação`)
+  const outraRegra = tentativas.filter(t => t.resultado === 'outra-regra')
+  if (outraRegra.length) {
+    const regras = [...new Set(outraRegra.map(t => t.regra?.titulo).filter(Boolean))]
+    partes.push(`${outraRegra.length} abriram, mas o dado cai em outra regra${regras.length ? ` (${regras.join('; ')})` : ''}`)
+  }
+  const pulado = conta('pulado')
+  if (pulado) partes.push(`${pulado} pulados (sem persona)`)
+  return partes.length ? `De ${tentativas.length} candidato(s): ${partes.join('; ')}.` : undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -316,12 +384,17 @@ export async function iniciarGeracao(credenciais: CredenciaisE2e, opcoes: Opcoes
           if (cenario.fonte !== 'databricks') {
             throw new Error('cenário manual: informe o código do aluno (aba Não encontrados)')
           }
-          const condicoes = perfilParaWhere(cenario.perfil)
-          if (opcoes.periodo) condicoes.push(`COD_PERIODO_LETIVO = ${Math.trunc(opcoes.periodo)}`)
+          // Relê a cada cenário: alguém pode ter descartado um aluno enquanto a geração rodava.
+          const descartados = ((await lerDescartados())[cenario.id] ?? []).map(d => d.codigoAluno)
+          const condicoes = condicoesDoCenario(cenario, descartados, opcoes.periodo)
+          if (descartados.length) registrar(`${cenario.id}: ${descartados.length} aluno(s) descartado(s) fora do sorteio`)
           const { candidatos, total } = await findE2eCandidates(condicoes, opcoes.candidatos ?? 5)
           registrar(`${cenario.id}: ${total} aluno(s) no perfil, ${candidatos.length} candidato(s)`)
+          // Cenário "fora do prazo" (perfil.softLaunch = 'fora') não pode ser liberado: grava como está.
+          const liberar = cenario.perfil?.softLaunch !== 'fora'
+          if (!liberar) registrar(`${cenario.id}: softLaunch "fora": grava sem liberar`)
           estado.resultados.push(await processarCenario(cenario, candidatos, {
-            credenciais, liberacoes, liberar: true, alunosNoPerfil: total
+            credenciais, liberacoes, liberar, alunosNoPerfil: total
           }))
         } catch (e) {
           const erro = e instanceof Error ? e.message : String(e)

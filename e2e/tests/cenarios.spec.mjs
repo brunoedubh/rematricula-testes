@@ -1,7 +1,9 @@
 // Um teste por cenário "gravado" do catálogo. Incluir cenário = editar cenarios/catalogo.json.
-import { test, expect } from '@playwright/test';
+// O teste confere a tela contra a REGRA (regras/regras.mjs) e contra o catálogo: ver tests/verificacao.mjs.
+import { test } from './gif.mjs';
 import fs from 'node:fs';
-import { abrirComGravacao, rotaRelativa } from './apoio.mjs';
+import { abrirComGravacao } from './apoio.mjs';
+import { regraDaGravacao, verificarTela } from './verificacao.mjs';
 
 const catalogo = JSON.parse(fs.readFileSync('cenarios/catalogo.json', 'utf8'));
 // Opcional: o código do aluno sai da própria gravação quando não há alunos.local.json (pipeline).
@@ -12,17 +14,9 @@ const filtro = process.env.E2E_CENARIOS ? new Set(process.env.E2E_CENARIOS.split
 for (const c of catalogo.cenarios.filter(c => c.status === 'gravado' && (!filtro || filtro.has(c.id)))) {
   test(`${c.titulo} [${c.id}]`, async ({ page, baseURL }, info) => {
     test.skip(!fs.existsSync(`gravacoes/${c.id}.har`), 'sem gravação local; rode o gravador');
-    info.annotations.push({ type: 'rota-esperada', description: c.esperado.rota });
-    const { semGravacao } = await abrirComGravacao(page, c.id, alunos[c.id], baseURL);
-    try {
-      await expect(page).toHaveURL(new RegExp(c.esperado.rota, 'i'));
-      for (const t of c.esperado.textos ?? []) await expect(page.getByText(t).first()).toBeVisible();
-      for (const b of c.esperado.botoes ?? []) await expect(page.getByRole('button', { name: b })).toBeVisible();
-    } finally {
-      // Tela onde o app parou, relativa ao ALVO (para comparar com a esperada na aba Execução).
-      info.annotations.push({ type: 'rota-obtida', description: rotaRelativa(page.url(), baseURL) });
-      // Chamada que o front fez e a gravação não tem: no Vue 3, sinal de contrato de API diferente.
-      for (const k of new Set(semGravacao)) info.annotations.push({ type: 'sem-gravacao', description: k });
-    }
+    info.annotations.push({ type: 'tipo', description: 'cenario' });
+    const oraculo = regraDaGravacao(c.id);
+    const reprodutor = await abrirComGravacao(page, c.id, alunos[c.id], baseURL);
+    await verificarTela({ page, baseURL, info, cenario: c, oraculo, reprodutor });
   });
 }

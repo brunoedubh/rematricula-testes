@@ -8,13 +8,15 @@
     "test:ui": "playwright test --ui",
     "relatorio": "playwright show-report",
     "gravar": "node scripts/gravar.mjs",
-    "test:unidade": "node --test scripts/classificar.test.mjs scripts/avancos.test.mjs"
+    "test:unidade": "node --test scripts/classificar.test.mjs scripts/avancos.test.mjs regras/regras.test.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "^1.65.0"
+    "@playwright/test": "^1.65.0",
+    "gifenc": "^1.0.3",
+    "jpeg-js": "^0.4.4"
   }
 }

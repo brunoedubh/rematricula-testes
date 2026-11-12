@@ -97,12 +97,21 @@ export async function reproduzir(page, arquivo) {
   return { semGravacao, ajustar: fn => ajustes.push(fn) };
 }
 
-export async function abrirComGravacao(page, idCenario, codigo, baseURL) {
+/**
+ * Abre o front com a gravação do cenário.
+ * opcoes.ajusteInformacoes: campos que sobrescrevem o ObterInformacoesAluno gravado (combinações de regras),
+ * aplicados antes da primeira chamada.
+ */
+export async function abrirComGravacao(page, idCenario, codigo, baseURL, opcoes = {}) {
   const origem = new URL(baseURL).origin;
   const arquivo = `gravacoes/${idCenario}.har`;
   // Bloqueia tudo que sai da origem do front (exceto fontes). A rota da API, registrada depois, tem prioridade.
   await page.route(u => u.origin !== origem && !/fonts\.(googleapis|gstatic)/.test(u.host), r => r.abort());
   const reprodutor = await reproduzir(page, arquivo);
+  if (opcoes.ajusteInformacoes) {
+    const ajuste = opcoes.ajusteInformacoes;
+    reprodutor.ajustar((k, json) => (/ObterInformacoesAluno/i.test(k) && json && typeof json === 'object' ? { ...json, ...ajuste } : json));
+  }
   await page.addInitScript(s => localStorage.setItem('ANIMA_REMATRICULA_KEY', s), sessaoFake(codigo ?? codigoDaGravacao(arquivo)));
   await page.goto('');
   await page.waitForLoadState('networkidle');
